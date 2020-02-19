@@ -1,0 +1,536 @@
+#!/bin/sh
+
+# -------------------------------------------------------------------
+# All kinds of cool stuff for environment
+#
+# Num  Colour    define          R G B
+# 0    black     COLOR_BLACK     0,0,0
+# 1    red       COLOR_RED       1,0,0
+# 2    green     COLOR_GREEN     0,1,0
+# 3    yellow    COLOR_YELLOW    1,1,0
+# 4    blue      COLOR_BLUE      0,0,1
+# 5    magenta   COLOR_MAGENTA   1,0,1
+# 6    cyan      COLOR_CYAN      0,1,1
+# 7    white     COLOR_WHITE     1,1,1
+#
+# -------------------------------------------------------------------
+black=`tput setaf 0`
+red=`tput setaf 1`
+green=`tput setaf 2`
+yellow=`tput setaf 3`
+blue=`tput setaf 4`
+magenta=`tput setaf 5`
+cyan=`tput setaf 6`
+white=`tput setaf 7`
+
+reset=`tput sgr0`
+
+bold=`tput bold`  # Select bold mode
+dim=`tput dim`    # Select dim (half-bright) mode
+smul=`tput smul`  # Enable underline mode
+rmul=`tput rmul`  # Disable underline mode
+smso=`tput smso`  # Enter standout (bold) mode
+
+# tput rev     # Turn on reverse video mode
+# tput rmso    # Exit standout mode
+
+#
+# [IN] - input argument
+# [OUT] - output result
+# [OPT] - optional argument
+#
+
+# -------------------------------------------------------------------
+# Pads a string with 'space' chars to the length specified
+#
+# [IN] arg1 - a string to pad
+# [IN] arg2 - the length of the output string
+# [OUT] returns the padded arg1 string
+#
+# -------------------------------------------------------------------
+MENU._string_pad() {
+    local len=$(($2 - ${#1}))
+    pad=`printf '%*s' "$len" | tr ' ' " "`
+    echo "$1$pad"
+}
+
+# -------------------------------------------------------------------
+# Converts a string to an upper chars string
+#
+# [IN] arg1 - string to convert
+# [OUT] returns a converted string
+#
+# -------------------------------------------------------------------
+MENU._to_upper() {
+    echo "$(echo ${1} | awk '{print toupper($0)}')"
+}
+
+# Returns 'true' when debugging/testing
+MENU._is_debug() {
+    echo 'true'
+    # Release
+    #echo ''
+}
+
+MENU._log() {
+    local marker="${green}${bold}INFO${reset}:"
+    [[ "$1" == "WARNING" ]] && marker="${yellow}${bold}WARNING${reset}:"
+    [[ "$1" == "SEVERE" ]] && marker="${red}${bold}SEVERE${reset}:"
+    shift
+    echo "${FUNCNAME[2]}: $marker $*"
+}
+
+MENU._error() {
+  MENU._log SEVERE $1
+}
+
+MENU._warning() {
+  MENU._log WARNING $1
+}
+
+MENU._log_info() {
+    [[ "$(MENU._is_debug)" ]] && MENU._log INFO $1
+}
+
+# -------------------------------------------------------------------
+# Global Map that holds all the menus created
+unset MENUMAP
+declare -A MENUMAP
+# -------------------------------------------------------------------
+
+# -------------------------------------------------------------------
+# Creates a new menu
+#
+# [IN]      arg1 - a menu's name (handle) to be used with MENU class
+# [IN][OPT] arg2 - a menu's name to be displayed
+# [IN][OPT] arg3 - short name as a selector for the menu's name
+# [IN][OPT] arg4 - a callback to be called when the menu is selected
+#
+# Remark: arg3 creates an alias for the menu unless the alias already
+# exists in the environment;
+# -------------------------------------------------------------------
+MENU.Create() {
+    if [[ $# -lt 1 ]]; then
+        MENU._error "MENU.Create requires more arguments"
+        return
+    fi
+
+    local -A context=()
+    context["name"]=''
+    context["alias"]=''
+    context["callback"]=''
+
+    # Optional arguments
+    [[ $# -gt 1 ]] && context["name"]=$2
+    [[ $# -gt 2 ]] && context["alias"]=$3
+    [[ $# -gt 3 ]] && context["callback"]=$4
+
+    local -a items=()
+    context["items"]=$(declare -p items)
+
+    MENUMAP[$1]=$(declare -p context)
+
+    local default="MENU.SetStyle $1"
+    ${default}
+
+    # Create an alias to call the menu's callback
+    if [[ "${context['alias']}" != '' ]] && [[ "${context['callback']}" != '' ]]; then
+        if [ `alias | grep ${context['alias']} | wc -l` != 0 ]; then
+            MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
+            [[ ! "$(MENU._is_debug)" ]] && return
+        fi
+        alias "${context['alias']}"="MENU._show $*"
+    fi
+}
+
+# -------------------------------------------------------------------
+# Sets the style for a menu
+#
+# [IN]      arg1 - name of the menu
+# [IN][OPT] arg2 - divider ('|' by default)
+# [IN][OPT] arg3 - alignment (none by default):
+#             'by-largest' - aligns all the menu's items by the
+#                            length of the largest item's name
+# [IN][OPT] arg4 - the color of hightlighted items (green by default)
+# [IN][OPT] arg5 - the symbol for the radio box (menu) selected
+#                  ('♦' by default)
+# [IN][OPT] arg6 - the symbol for the check box selected
+#                  ('x' by default)
+#
+# Remark: default can be passed as any [OPT] argument, which will set
+#         the default value for the style parameter
+#
+# Example: MENU.SetStyle Menu1 default default ${red} '○' default
+#
+# -------------------------------------------------------------------
+MENU.SetStyle() {
+    if [[ $# -lt 1 ]]; then
+      MENU._error "MENU.SetStyle requires more arguments"
+      return
+    fi
+
+    eval "${MENUMAP["$1"]}"
+
+    # By default
+    context["divider"]='|'
+    context["align"]=''
+    context["color"]=${green}
+    context["radio-symbol"]='♦'
+    context["check-symbol"]='x'
+    context["max-len"]=0
+
+    # Optional arguments
+    [[ $# -gt 1 && "$2" != "default" ]] && context["divider"]=$2
+    [[ $# -gt 2 && "$3" != "default" ]] && context["align"]=$3
+    [[ $# -gt 3 && "$4" != "default" ]] && context["color"]=$4
+    [[ $# -gt 4 && "$5" != "default" ]] && context["radio-symbol"]=$5
+    [[ $# -gt 5 && "$6" != "default" ]] && context["check-symbol"]=$6
+
+    MENUMAP[$1]=$(declare -p context)
+}
+
+# -------------------------------------------------------------------
+# Add a item into a menu
+#
+# [IN]      arg1 - type of the item, supported types are:
+#           'radio-box', 'check-box', 'divider', 'ln-break'
+# [IN]      arg2 - name of the menu
+# [IN]      arg3 - name of an item to be added
+# [IN][OPT] arg4 - short name as a selector for the menu's item
+# [IN][OPT] arg5 - callback to be called when the item is selected
+#
+# Remark: arg4 creates an alias for the menu's item unless the alias
+# already exists
+#
+# Remark: arg3 has to be part of the item name to be highlighted,
+# if arg2 = 'Item1', and arg3 = 'em1' then the 'em1' will be the
+# alias and will be highlighted when the menu is displayed; if the
+# selector is not part of the name, e.g. 'I1' then the alias still
+# will be creaded but the selector in the menu will not be highlighted
+#
+# If arg3 is not specified then the item can be selected via the menu
+# alias + the name of the item
+#
+# Remark: arg4 callback when is called there are 2 arguments passed
+# into the callbak: [IN] arg1 - menu name, [IN] arg2 - item name;
+# For an example, please, look MENU._dummy_callback
+#
+# If arg4 is not specified then MENU._dummy_callback is called for
+# an item
+# -------------------------------------------------------------------
+MENU._add_item() {
+    if [[ $# -lt 2 ]]; then
+        MENU._error "MENU.AddItem requires more arguments"
+        return
+    fi
+
+    MENU._log_info "args: $*"
+
+    eval item_name="$3"
+
+    local -A item=()
+    item["type"]=$1
+    item["name"]=$item_name
+    item["alias"]=$4
+    item["callback"]=$5
+    item["checked"]='false' # used for 'checkbox' mode only
+
+    eval "${MENUMAP["$2"]}"
+    eval "${context["items"]}"
+
+    items[${#items[@]}]=$(declare -p item)
+    context["items"]=$(declare -p items)
+    [[ ${context["item-len-max"]} -lt ${#item["name"]} ]] && context["item-len-max"]=${#item["name"]}
+    MENUMAP[$2]=$(declare -p context)
+
+    [[ "${item['type']}" != "radio-box" && "${item['type']}" != "check-box" ]] && return
+
+    # Create an alias to call the menu's callback
+    if [[ "${item['alias']}" != '' ]] && [[ "${item['callback']}" != '' ]]; then
+        if [ `alias | grep ${item['alias']} | wc -l` != 0 ]; then
+            MENU._warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
+            [[ ! "$(MENU._is_debug)" ]] && return
+        fi
+
+        [[ "${item['type']}" == "radio-box" ]] && cmd='Select' || cmd='Check'
+        alias "${item['alias']}"="MENU.$cmd $2 \"${item["name"]}\""
+    fi
+}
+
+MENU.AddRadioBox() {
+    local cmd="MENU._add_item radio-box $*"
+    ${cmd}
+}
+
+MENU.AddCheckBox() {
+    local menu_name=$1
+    local item_name="$2"
+    shift 2
+    local cmd="MENU._add_item check-box $menu_name \"\${item_name}\" $*"
+    ${cmd}
+}
+
+MENU.AddLnBreak() {
+    local cmd="MENU._add_item ln-break $*"
+    ${cmd}
+}
+
+MENU.AddDivider() {
+    local cmd="MENU._add_item divider $*"
+    ${cmd}
+}
+
+# -------------------------------------------------------------------
+# Specifies a menu's item to be selected by default
+#
+# [IN] arg1 - name of the menu
+# [IN] arg2 - name of the item to be selected
+#
+# Remark: The menu's item callback is launched in MENU.Show
+# -------------------------------------------------------------------
+MENU.Select() {
+    if [[ $# -lt 2 ]]; then
+        MENU._error "MENU.Select requires more arguments"
+        return
+    fi
+
+    eval "${MENUMAP["$1"]}"
+    context["selected"]=$2
+    MENUMAP[$1]=$(declare -p context)
+
+    #MENU.Show $1 false true
+}
+
+MENU.Check() {
+    if [[ $# -lt 2 ]]; then
+        MENU._error "MENU.Select requires more arguments"
+        return
+    fi
+
+    eval "${MENUMAP["$1"]}"
+    eval "${context["items"]}"
+
+    for i in "${!items[@]}"; do
+        eval "${items["$i"]}"
+        if [ "${item["name"]}" == $2 ]; then
+            item["checked"]="true"
+            items["$i"]=$(declare -p item)
+            context["items"]=$(declare -p items)
+            MENUMAP[$1]=$(declare -p context)
+            return
+        fi
+    done
+}
+
+# -------------------------------------------------------------------
+# Displays a menu
+#
+# [IN] arg1 - name of the menu to be displayed
+#
+# The rest of the [BOOLEAN] arguments are 'false' by default:
+#
+# [IN][OPT] flag1 - whether to call the manu's callback
+# [IN][OPT] flag2 - whether to call the selected item's callback
+# [IN][OPT] flag3 - whether to call all callbacks of check box items
+#
+# -------------------------------------------------------------------
+MENU.Show() {
+    if [[ $# -lt 1 ]]; then
+        MENU._error "MENU.Show requires more arguments"
+        return
+    fi
+
+    echo "------------------------------------------------------------------------"
+
+    eval "${MENUMAP["$1"]}"
+
+    if [ ${context['name']} != "" ]; then
+        printf " * ${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}: "
+    fi
+
+    eval "${context["items"]}"
+
+    local idx=0
+    local -a check_box_cbs=()
+
+    for i in "${!items[@]}"; do
+        eval "${items["$i"]}"
+
+        local name=${item["name"]}
+
+        if [ "${context["align"]}" == "by-largest" ]; then
+            name=$(MENU._string_pad ${item["name"]} ${context["item-len-max"]})
+        fi
+
+        local type=${item["type"]}
+
+        if [ "$type" == "ln-break" ]; then
+            printf "\n"
+            local pad=$(MENU._string_pad '' ${#context['name']})
+            printf "     $pad"
+            continue
+        fi
+
+        if [ "$type" == "divider" ]; then
+            local divider=${context["divider"]}
+            printf "$divider "
+            continue;
+        fi
+
+        local alias=${item["alias"]}
+        local color=${context["color"]}
+        local selected=${context["selected"]}
+        local radio_item_cb=''
+        local check_item_cb=''
+
+        if [ "$type" == "radio-box" ]; then
+            if [ "${item["name"]}" == "$selected" ]; then
+                local hi=${smul}${item["alias"]}${rmul}
+                printf "${color}${bold}(${context["radio-symbol"]}) ${name/$alias/$hi}${reset} "
+
+                # Prepare the radio box item's callback to be called later if requested
+                [[ "$3" == "true" ]] && local radio_item_cb=${item["callback"]}
+            else
+                printf "( ) ${name/$alias/${smul}$alias${reset}} "
+            fi
+            continue;
+        fi
+
+        if [ "$type" == "check-box" ]; then
+            if [ "${item["checked"]}" == "true" ]; then
+                local hi=${smul}${item["alias"]}${rmul}
+                printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
+
+                # Prepare all the check box item's callbacks if requested
+                if [[ "$4" == "true" && "${item["callback"]}" != "" ]]; then
+                    check_box_cbs[$idx]=${item["callback"]}
+                    idx=$(($idx + 1))
+                fi
+            else
+                printf "[ ] ${name/$alias/${smul}$alias${reset}} "
+            fi
+            continue;
+        fi
+    done
+
+    printf "\n"
+    echo "------------------------------------------------------------------------"
+
+    # First, call the menu's callback and the selected radio box callback
+    [[ "$2" == "true" ]] && ${context["callback"]}
+    [[ "$radio_item_cb" != "" ]] && ${radio_item_cb}
+
+    # Last, call all the callbacks of all the check box items
+    if [[ ${#check_box_cbs} -gt 0 ]]; then
+        for i in "${!check_box_cbs[@]}"; do
+            cb=${check_box_cbs[$i]}
+            ${cb}
+        done
+    fi
+}
+
+# arguments are comming from the menu's alias: $* f1 f2 f3
+MENU._show() {
+    [[ $# -gt 4 ]] && f1=$5 || f1='false'
+    [[ $# -gt 5 ]] && f2=$6 || f2='false'
+    [[ $# -gt 6 ]] && f3=$7 || f3='false'
+    MENU.Show $1 $f1 $f2 $f3
+}
+
+MENU._debug_print() {
+    [[ ! "$(MENU._is_debug)" ]] && return
+    for menu_key in "${!MENUMAP[@]}"; do
+        echo '----------------------------------------------------------------------------------------'
+        eval "${MENUMAP["$menu_key"]}" # unpack: context variable
+        echo "* $menu_key:"
+        for ctx_key in "${!context[@]}"; do
+            if [ "$ctx_key" == "items" ]; then
+                echo "  - [$ctx_key]:"
+                eval "${context["$ctx_key"]}" # unpack: items variable
+                for items_key in "${!items[@]}"; do
+                    echo "    + [$items_key]: ${items["$items_key"]}"
+                    eval "${items["$items_key"]}" # unpack: item variable
+                    for indx in "${!item[@]}"; do
+                        printf "      ♦ [$indx]: ${item["$indx"]}\n"
+                    done
+                done
+            else
+                printf "  - [$ctx_key]: ${context["$ctx_key"]}${reset}\n"
+            fi
+        done
+    done
+    echo '----------------------------------------------------------------------------------------'
+}
+
+Create() {
+    MENU.Create Menu1 PLATFORM PL PlatformMenu_Cb
+    #MENU.SetStyle Menu1 default by-largest default default default
+    #MENU.SetStyle Menu1 default default ${red} '○' default
+
+    MENU.AddRadioBox Menu1 Item1 m1 Menu1Item1_Cb
+    MENU.AddRadioBox Menu1 Item2 m2 Menu1Item2_Cb
+
+    #MENU.AddLnBreak Menu1
+    #MENU.AddDivider Menu1
+    nxcheck_name="Nx Check1"
+    ppcheck_name="PP Check1"
+    #MENU.AddCheckBox Menu1 "\${nxcheck_name}" k1 Menu1Check1_Cb
+    #MENU.AddCheckBox Menu1 "\${ppcheck_name}" k2 Menu1Check2_Cb
+    #MENU.AddCheckBox Menu1 "\"Nx Check1\"" k1 Menu1Check1_Cb
+    #MENU.AddCheckBox Menu1 "\"PP Check1\"" k2 Menu1Check2_Cb
+    MENU.AddCheckBox Menu1 "Nx Check1" k1 Menu1Check1_Cb
+    MENU.AddCheckBox Menu1 "PP Check2" k2 Menu1Check2_Cb
+    #MENU.AddDivider Menu1
+    #MENU.AddLnBreak Menu1
+
+    MENU.AddRadioBox Menu1 Item3 m3 Menu1Item3_Cb
+
+    MENU.Select Menu1 Item3
+    MENU.Check Menu1 "Nx Check1"
+
+    MENU._debug_print
+
+    MENU.Show Menu1
+}
+
+Create
+
+##############################################
+
+PlatformMenu_Cb() {
+    echo 'Menu.Platform.Callback...'
+}
+
+Menu2_Cb() {
+    echo 'PICTURE.Callback...'
+}
+
+Menu2Item1_Cb() {
+    echo 'PICTURE.Pic1.Callback...'
+}
+
+Menu2Item2_Cb() {
+    echo 'PICTURE.Pic2.Callback...'
+}
+
+Menu1Item1_Cb() {
+    echo 'MN.Item1.Callback...'
+}
+
+Menu1Item2_Cb() {
+    echo 'MN.Item2.Callback...'
+}
+
+Menu1Item3_Cb() {
+    echo 'MN.Item3.Callback...'
+}
+
+Menu1Check1_Cb() {
+    echo 'PLATFORM.Check1.Callback...'
+}
+
+Menu1Check2_Cb() {
+    echo 'PLATFORM.Check2.Callback...'
+}
+
+##############################################
