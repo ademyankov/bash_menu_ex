@@ -296,8 +296,9 @@ MENU._add_item() {
             [[ ! "$(MENU._is_debug)" ]] && return
         fi
 
-        #[[ "${item['type']}" == "radio-box" ]] && cmd='Select' || cmd='Check'
-        alias "${item['alias']}"="MENU.Select $2 \"${item["name"]}\" true false true"
+        # See Select command for the flags:                      X    1    2    3
+        [[ "${item['type']}" == "radio-box" ]] && local flags="true false true false" || local flags="true false false true"
+        alias "${item['alias']}"="MENU.Select $2 \"${item["name"]}\" $flags"
     fi
 }
 
@@ -335,7 +336,9 @@ MENU.AddDivider() {
 # [IN]      arg1  - name of the menu
 # [IN]      arg2  - name of the item to be selected
 # [IN][OPT] flagX - whether to call MENU.Show
-# [IN][OPT] flag1 - whether to call
+# [IN][OPT] flag1 - whether to call the main manu's callback
+# [IN][OPT] flag2 - whether to call the selected item's callback
+# [IN][OPT] flag3 - whether to call all callbacks of check box items
 #
 # Remark: The menu's item callback is launched when MENU.Show is
 #         executed
@@ -375,13 +378,14 @@ MENU.Select() {
     [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
     [[ $# -gt 3 ]] && flag1=$4 || flag1='false'
     [[ $# -gt 4 ]] && flag2=$5 || flag2='false'
+    [[ $# -gt 5 ]] && flag3=$6 || flag3='false'
 
     # When called from the alias
-    [[ $# -gt 5 ]] && flag1=$6 || flag1='false'
+    [[ $# -gt 6 ]] && flag1=$7 || flag1='false'
 
     if [[ "$flagX" ]]; then
-        MENU._log_info "Show $1 f1=$flag1 f2=$flag2 false"
-        MENU.Show $1 $flag1 $flag2 false
+        MENU._log_info "Show $1 f1=$flag1 f2=$flag2 f2=$flag3"
+        MENU.Show $1 $flag1 $flag2 $flag3
     fi
 }
 
@@ -416,6 +420,7 @@ MENU.Show() {
 
     local idx=0
     local -a callbacks=()
+    local -a arguments=()
 
     # Store the main menu's callback to be called later
     if [[ "$2" == "true" ]] && [[ "${context["callback"]}" != "" ]]; then
@@ -471,15 +476,17 @@ MENU.Show() {
             if [ "${item["checked"]}" == "true" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
-
-                # Store all the check box item's callbacks to be called later
-                if [[ "$4" == "true" ]] && [[ "${item["callback"]}" != "" ]]; then
-                    callbacks[$idx]=${item["callback"]}
-                    idx=$(($idx + 1))
-                fi
             else
                 printf "[ ] ${name/$alias/${smul}$alias${reset}} "
             fi
+
+            # Store all the check box item's callbacks to be called later
+            if [[ "$4" == "true" ]] && [[ "${item["callback"]}" != "" ]]; then
+                callbacks[$idx]=${item["callback"]}
+                arguments[$idx]=${item["checked"]}
+                idx=$(($idx + 1))
+            fi
+
             continue;
         fi
     done
@@ -490,6 +497,9 @@ MENU.Show() {
     # Last, call all the callbacks that needs to be called
     for i in "${!callbacks[@]}"; do
         cb=${callbacks[$i]}
+        if [[ "${arguments[$i]}" ]]; then
+            cb+=" ${arguments[$i]}"
+        fi
         ${cb}
     done
 }
@@ -613,9 +623,18 @@ MENU.DemoPlEmbedCb() {
     echo "------------------------------------------------------------------------"
 }
 
-MENU.MENU.DemoPlNxCheckCb() {
+MENU.DemoPlNxCheckCb() {
     echo ' * PL.NxMode Callback...'
-    echo ' ' # on off
+    [[ "$1" == "true" ]] && state='X' || state=' '
+    echo " * state.[$state]"
+    echo ' * ...'
+    echo "------------------------------------------------------------------------"
+}
+
+MENU.DemoPlPPCheckCb() {
+    echo ' * PL.PPMode Callback...'
+    [[ "$1" == "true" ]] && state='X' || state=' '
+    echo " * state.[$state]"
     echo ' * ...'
     echo "------------------------------------------------------------------------"
 }
