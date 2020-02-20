@@ -135,10 +135,10 @@ MENU._log_info() {
 #
 #         MENU.Show has flags that can trigger any type of callbacks.
 #
-#         For example:
-#         MENU.Show menu1 true true true
+# For example:
+#   ~$ MENU.Show menu1 true true true
 #         which is equivalent to:
-#         PL true true true
+#   ~$ PL true true true
 #         it will
 #         trigger all callbacks (main menu's callback, currently
 #         selected radio box callback and all callbacks for all the
@@ -170,7 +170,7 @@ MENU.Create() {
     local default="MENU.SetStyle $1"
     ${default}
 
-    # Create an alias to call the menu's callback
+    # Create an alias to display the menu
     if [[ "${context['alias']}" != '' ]] && [[ "${context['callback']}" != '' ]]; then
         if [ `alias | grep ${context['alias']} | wc -l` != 0 ]; then
             MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
@@ -296,8 +296,8 @@ MENU._add_item() {
             [[ ! "$(MENU._is_debug)" ]] && return
         fi
 
-        [[ "${item['type']}" == "radio-box" ]] && cmd='Select' || cmd='Check'
-        alias "${item['alias']}"="MENU.$cmd $2 \"${item["name"]}\""
+        #[[ "${item['type']}" == "radio-box" ]] && cmd='Select' || cmd='Check'
+        alias "${item['alias']}"="MENU.Select $2 \"${item["name"]}\" true false true"
     fi
 }
 
@@ -332,10 +332,14 @@ MENU.AddDivider() {
 # -------------------------------------------------------------------
 # Specifies a menu's item to be selected by default
 #
-# [IN] arg1 - name of the menu
-# [IN] arg2 - name of the item to be selected
+# [IN]      arg1  - name of the menu
+# [IN]      arg2  - name of the item to be selected
+# [IN][OPT] flagX - whether to call MENU.Show
+# [IN][OPT] flag1 - whether to call
 #
-# Remark: The menu's item callback is launched in MENU.Show
+# Remark: The menu's item callback is launched when MENU.Show is
+#         executed
+#
 # -------------------------------------------------------------------
 MENU.Select() {
     if [[ $# -lt 2 ]]; then
@@ -344,33 +348,41 @@ MENU.Select() {
     fi
 
     eval "${MENUMAP["$1"]}"
-    context["selected"]=$2
-    MENUMAP[$1]=$(declare -p context)
 
-    MENU.Show $1 false true false
-}
-
-MENU.Check() {
-    if [[ $# -lt 2 ]]; then
-        MENU._error "MENU.Select requires more arguments"
-        return
-    fi
-
-    MENU._log_info "args: $*"
-
-    eval "${MENUMAP["$1"]}"
+    # We have to go through items[] first to check whether
+    # the selected item is a check box type item
     eval "${context["items"]}"
-
+    local check_box_set
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
-        if [ "${item["name"]}" == $2 ]; then
-            item["checked"]="true"
+        if [[ "${item["name"]}" == $2 ]] && [[ "${item["type"]}" == "check-box" ]]; then
+            [[ "${item["checked"]}" == "true" ]] && item["checked"]="false" || item["checked"]="true"
             items["$i"]=$(declare -p item)
             context["items"]=$(declare -p items)
-            MENUMAP[$1]=$(declare -p context)
-            return
+            check_box_set='true'
+            MENU._log_info "CHECK BOX: '$2' state='${item["checked"]}'"
+            break
         fi
     done
+
+    # Set selected if radio box type item
+    [[ ! "$check_box_set" ]] && context["selected"]=$2
+
+    MENUMAP[$1]=$(declare -p context)
+
+    MENU._log_info "ARGS: $*"
+
+    [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
+    [[ $# -gt 3 ]] && flag1=$4 || flag1='false'
+    [[ $# -gt 4 ]] && flag2=$5 || flag2='false'
+
+    # When called from the alias
+    [[ $# -gt 5 ]] && flag1=$6 || flag1='false'
+
+    if [[ "$flagX" ]]; then
+        MENU._log_info "Show $1 f1=$flag1 f2=$flag2 false"
+        MENU.Show $1 $flag1 $flag2 false
+    fi
 }
 
 # -------------------------------------------------------------------
@@ -380,7 +392,7 @@ MENU.Check() {
 #
 # The rest of the [BOOLEAN] arguments are 'false' by default:
 #
-# [IN][OPT] flag1 - whether to call the manu's callback
+# [IN][OPT] flag1 - whether to call the main manu's callback
 # [IN][OPT] flag2 - whether to call the selected item's callback
 # [IN][OPT] flag3 - whether to call all callbacks of check box items
 #
@@ -392,6 +404,7 @@ MENU.Show() {
     fi
 
     echo "------------------------------------------------------------------------"
+    MENU._log_info "ARGS: $*"
 
     eval "${MENUMAP["$1"]}"
 
@@ -540,49 +553,69 @@ MENU.Demo() {
 
     #MENU.AddLnBreak Menu1
     #MENU.AddDivider Menu1
-    MENU.AddCheckBox menu1 "Nx mode" Nx Menu1Check1_Cb
-    MENU.AddCheckBox menu1 "PP mode" PP Menu1Check2_Cb
+    #MENU.AddCheckBox menu1 "Nx mode" Nx MENU.DemoPlNxCheckCb
+    #MENU.AddCheckBox menu1 "PP mode" PP MENU.DemoPlPPCheckCb
+    MENU.AddCheckBox menu1 "Nx-Mode" Nx MENU.DemoPlNxCheckCb
+    MENU.AddCheckBox menu1 "PP-Mode" PP MENU.DemoPlPPCheckCb
     #MENU.AddDivider Menu1
     #MENU.AddLnBreak Menu1
 
     MENU.AddRadioBox menu1 Qemu mu MENU.DemoPlQemuCb
 
     MENU.Select menu1 Qemu
-    #MENU.Check menu1 "Nx mode"
+    #MENU.Select menu1 Nx-Mode
 
     MENU._debug_print
 
-    MENU.Show menu1
+    #
+    # Shows the menu
+    #               flag1 - calls main menu's callback
+    #                 |  flag2 - calls selected radio0 box item's callback
+    #                 |    |  flag3
+    MENU.Show menu1 true true false
+
+
+    #
+    #
+    #
+    #
+    #
+
     #MENU.Show menu2
 }
-
-demo
 
 # -------------------------------------------------------------------
 
 # Callbacks
 
 MENU.DemoPlCb() {
-    echo ' * Main menu PLATFORM Callback...'
+    echo ' * PLATFORM: Main menu Callback...'
     echo ' * ...'
     echo "------------------------------------------------------------------------"
 
 }
 
 MENU.DemoPlQemuCb() {
-    echo ' * PLATFORM Qemu Callback...'
+    echo ' * PL.Qemu: Callback...'
     echo ' * ...'
     echo "------------------------------------------------------------------------"
 }
 
 MENU.DemoPlLinuxCb() {
-    echo ' * PLATFORM Linux Callback...'
+    echo ' * PL.Linux: Callback...'
     echo ' * ...'
     echo "------------------------------------------------------------------------"
 }
 
 MENU.DemoPlEmbedCb() {
-    echo ' * PLATFORM Embedded Callback...'
+    echo ' * PL.Embed: Callback...'
+    echo ' * ...'
+    echo "------------------------------------------------------------------------"
+}
+
+MENU.MENU.DemoPlNxCheckCb() {
+    echo ' * PL.NxMode Callback...'
+    echo ' ' # on off
     echo ' * ...'
     echo "------------------------------------------------------------------------"
 }
@@ -618,3 +651,5 @@ Menu1Check2_Cb() {
 }
 
 # -------------------------------------------------------------------
+
+demo
