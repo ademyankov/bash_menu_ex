@@ -117,7 +117,7 @@ MENU._log_info() {
 # -------------------------------------------------------------------
 # Creates a new menu
 #
-# [IN]      arg1 - a menu's name (handle) to be used with MENU class
+# [IN]      arg1 - a name/handle of the menu to be used w/ the API
 # [IN][OPT] arg2 - a menu's name to be displayed
 # [IN][OPT] arg3 - short name as a selector for the menu's name
 # [IN][OPT] arg4 - a callback to be called when the menu is selected
@@ -183,7 +183,7 @@ MENU.Create() {
 # -------------------------------------------------------------------
 # Sets the style for a menu
 #
-# [IN]      arg1 - name of the menu
+# [IN]      arg1 - a name/handle of the menu to be used w/ the API
 # [IN][OPT] arg2 - divider ('|' by default)
 # [IN][OPT] arg3 - alignment (none by default):
 #             'by-largest' - aligns all the menu's items by the
@@ -232,8 +232,8 @@ MENU.SetStyle() {
 #
 # [IN]      arg1 - type of the item, supported types are:
 #           'radio-box', 'check-box', 'divider', 'ln-break'
-# [IN]      arg2 - name of the menu
-# [IN]      arg3 - name of an item to be added
+# [IN]      arg2 - a name/handle of the menu to be used w/ the API
+# [IN]      arg3 - a name of an item to be added into the menu
 # [IN][OPT] arg4 - short name as a selector for the menu's item
 # [IN][OPT] arg5 - callback to be called when the item is selected
 #
@@ -383,7 +383,7 @@ MENU.Select() {
     # When called from the alias
     [[ $# -gt 6 ]] && flag1=$7 || flag1='false'
 
-    if [[ "$flagX" ]]; then
+    if [[ "$flagX" == "true" ]]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 f2=$flag3"
         MENU.Show $1 $flag1 $flag2 $flag3
     fi
@@ -392,7 +392,7 @@ MENU.Select() {
 # -------------------------------------------------------------------
 # Displays a menu
 #
-# [IN] arg1 - name of the menu to be displayed
+# [IN] arg1 - a name/handle of the menu to be used w/ the API
 #
 # The rest of the [BOOLEAN] arguments are 'false' by default:
 #
@@ -542,23 +542,38 @@ MENU._debug_print() {
 #
 
 MENU.Demo() {
+    # ----------------------------------------------------------------------------------------
+    # Create a menu
+    #
+    #           handle                      - a name/handle of the menu to be used w/ the API
+    #             |     item                - a name of an item to be added into the menu
+    #             |      |    alias         - short name as a selector for the menu's item
+    #             |      |     |  callback  - callback to be called when the item is selected
     MENU.Create menu1 PLATFORM PL MENU.DemoPlCb
-: '
-    MENU.Create menu2 Build Build PlatformMenu_Cb
-    MENU.AddRadioBox menu2 Debug bug Menu1Item3_Cb
-    MENU.AddRadioBox menu2 Release se Menu1Item3_Cb
-    MENU.AddDivider menu2
-    MENU.AddCheckBox menu2 Pedantic Pedant Menu1Item1_Cb
-    MENU.AddCheckBox menu2 Wall all Menu1Item1_Cb
-    MENU.AddCheckBox menu2 Werror err Menu1Item1_Cb
-    MENU.AddCheckBox menu2 "ISO C99" iso Menu1Item1_Cb
-    MENU.Select menu2 Debug
-    MENU.Check menu2 Pedantic
-'
-    #MENU.SetStyle Menu1 default by-largest default default default
-    #MENU.SetStyle Menu1 default default ${red} '○' default
+    # ----------------------------------------------------------------------------------------
 
+    # --------------------------------------------------------------------------------------------------------------
+    # Set the style for a menu
+    #
+    # 1           handle                                        - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]       |    divider                                - devider to be used w/ .AddDivider ('|' by default)
+    # 3 [OPT]       |      |    alignment                       - alignent of the item names (none by default)
+    # 4 [OPT]       |      |       |       color                - the color of hightlighted items (green by default)
+    # 5 [OPT]       |      |       |         |  symbol1         - the select symbol for the radio box when selected
+    # 6 [OPT]       |      |       |         |     |  symbol2   - the check symbol for the check box when checked
+    #MENU.SetStyle menu1 default by-largest ${red} '○' default
+    # --------------------------------------------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------------------
+    # Add a radio-box item into the menu
+    #
+    #                handle                     - a name/handle of the menu to be used w/ the API
+    #                  |   item                 - a name of an item to be added into the menu
+    #                  |    |    alias          - short name as a selector for the menu's item
+    #                  |    |     |  callback   - callback to be called when the item is selected
     MENU.AddRadioBox menu1 Linux nux MENU.DemoPlLinuxCb
+    # ----------------------------------------------------------------------------------------
+
     MENU.AddRadioBox menu1 Embed mbed MENU.DemoPlEmbedCb
 
     #MENU.AddLnBreak Menu1
@@ -572,17 +587,27 @@ MENU.Demo() {
 
     MENU.AddRadioBox menu1 Qemu mu MENU.DemoPlQemuCb
 
-    MENU.Select menu1 Qemu
-    #MENU.Select menu1 Nx-Mode
+    # ----------------------------------------------------------------------------------------
+    # Select an item of the menu
+    #
+    #           handle      - a name/handle of the menu to be used w/ the API
+    #             |   item  - a name of an item to be set as 'selected' in the menu
+    MENU.Select menu1 Qemu false
+    # ----------------------------------------------------------------------------------------
+
+    MENU.Select menu1 Nx-Mode false
 
     MENU._debug_print
 
+    # ----------------------------------------------------------------------------------------
+    # Show/display the menu
     #
-    # Shows the menu
-    #               flag1 - calls main menu's callback
-    #                 |  flag2 - calls selected radio0 box item's callback
-    #                 |    |  flag3
-    MENU.Show menu1 true true false
+    #         handle                - a name/handle of the menu to be used w/ the API
+    #           |   flag1           - whether to call the main menu's callback
+    #           |     |  flag2      - whether to call the selected radio box item's callback
+    #           |     |    |  flag3 - whether to call all the callbacks of all check box items
+    MENU.Show menu1 true true true
+    # ----------------------------------------------------------------------------------------
 
 
     #
@@ -591,7 +616,20 @@ MENU.Demo() {
     #
     #
 
+: '
+    MENU.Create menu2 Build Build PlatformMenu_Cb
+    MENU.AddRadioBox menu2 Debug bug Menu1Item3_Cb
+    MENU.AddRadioBox menu2 Release se Menu1Item3_Cb
+    MENU.AddDivider menu2
+    MENU.AddCheckBox menu2 Pedantic Pedant Menu1Item1_Cb
+    MENU.AddCheckBox menu2 Wall all Menu1Item1_Cb
+    MENU.AddCheckBox menu2 Werror err Menu1Item1_Cb
+    MENU.AddCheckBox menu2 "ISO C99" iso Menu1Item1_Cb
+    MENU.Select menu2 Debug
+    MENU.Check menu2 Pedantic
+'
     #MENU.Show menu2
+
 }
 
 # -------------------------------------------------------------------
