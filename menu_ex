@@ -459,7 +459,7 @@ MENU.Show() {
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
 
-                # Store all the check box item's callbacks if requested
+                # Store all the check box item's callbacks to be called later
                 if [[ "$4" == "true" ]] && [[ "${item["callback"]}" != "" ]]; then
                     callbacks[$idx]=${item["callback"]}
                     idx=$(($idx + 1))
@@ -475,12 +475,10 @@ MENU.Show() {
     echo "------------------------------------------------------------------------"
 
     # Last, call all the callbacks that needs to be called
-    if [[ ${#callbacks} -gt 0 ]]; then
-        for i in "${!callbacks[@]}"; do
-            cb=${callbacks[$i]}
-            ${cb}
-        done
-    fi
+    for i in "${!callbacks[@]}"; do
+        cb=${callbacks[$i]}
+        ${cb}
+    done
 }
 
 # arguments are comming from the menu's alias: $* f1 f2 f3
@@ -538,7 +536,7 @@ MENU.Demo() {
     #MENU.SetStyle Menu1 default default ${red} '○' default
 
     MENU.AddRadioBox menu1 Linux nux MENU.DemoPlLinuxCb
-    MENU.AddRadioBox menu1 Embed mbed Menu1Item2_Cb
+    MENU.AddRadioBox menu1 Embed mbed MENU.DemoPlEmbedCb
 
     #MENU.AddLnBreak Menu1
     #MENU.AddDivider Menu1
@@ -579,6 +577,12 @@ MENU.DemoPlQemuCb() {
 
 MENU.DemoPlLinuxCb() {
     echo ' * PLATFORM Linux Callback...'
+    echo ' * ...'
+    echo "------------------------------------------------------------------------"
+}
+
+MENU.DemoPlEmbedCb() {
+    echo ' * PLATFORM Embedded Callback...'
     echo ' * ...'
     echo "------------------------------------------------------------------------"
 }
