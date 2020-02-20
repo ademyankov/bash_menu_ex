@@ -128,6 +128,23 @@ MENU._log_info() {
 # Example:
 # MENU.Create menu1 PLATFORM PL
 #
+# Remark: alias PL simply shows the menu and by default it does not
+#         fire any callbacks. PL alias is simply a substitution for:
+#
+#         MENU.Show menu1 false false flase
+#
+#         MENU.Show has flags that can trigger any type of callbacks.
+#
+#         For example:
+#         MENU.Show menu1 true true true
+#         which is equivalent to:
+#         PL true true true
+#         it will
+#         trigger all callbacks (main menu's callback, currently
+#         selected radio box callback and all callbacks for all the
+#         check boxies)
+#         So, you can do tricks with aliases, like so:
+#         alias pl='PL true true'
 # -------------------------------------------------------------------
 MENU.Create() {
     if [[ $# -lt 1 ]]; then
@@ -330,7 +347,7 @@ MENU.Select() {
     context["selected"]=$2
     MENUMAP[$1]=$(declare -p context)
 
-    #MENU.Show $1 false true
+    MENU.Show $1 false true false
 }
 
 MENU.Check() {
@@ -338,6 +355,8 @@ MENU.Check() {
         MENU._error "MENU.Select requires more arguments"
         return
     fi
+
+    MENU._log_info "args: $*"
 
     eval "${MENUMAP["$1"]}"
     eval "${context["items"]}"
@@ -383,7 +402,13 @@ MENU.Show() {
     eval "${context["items"]}"
 
     local idx=0
-    local -a check_box_cbs=()
+    local -a callbacks=()
+
+    # Store the main menu's callback to be called later
+    if [[ "$2" == "true" ]] && [[ "${context["callback"]}" != "" ]]; then
+        callbacks[$idx]=${context["callback"]}
+        idx=$(($idx + 1))
+    fi
 
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
@@ -412,16 +437,17 @@ MENU.Show() {
         local alias=${item["alias"]}
         local color=${context["color"]}
         local selected=${context["selected"]}
-        local radio_item_cb=''
-        local check_item_cb=''
 
         if [ "$type" == "radio-box" ]; then
             if [ "${item["name"]}" == "$selected" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}(${context["radio-symbol"]}) ${name/$alias/$hi}${reset} "
 
-                # Prepare the radio box item's callback to be called later if requested
-                [[ "$3" == "true" ]] && local radio_item_cb=${item["callback"]}
+                # Store the radio box item's callback to be called later
+                if [[ "$3" == "true" ]] && [[ "${item["callback"]}" != "" ]]; then
+                    callbacks[$idx]=${item["callback"]}
+                    idx=$(($idx + 1))
+                fi
             else
                 printf "( ) ${name/$alias/${smul}$alias${reset}} "
             fi
@@ -433,9 +459,9 @@ MENU.Show() {
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
 
-                # Prepare all the check box item's callbacks if requested
-                if [[ "$4" == "true" && "${item["callback"]}" != "" ]]; then
-                    check_box_cbs[$idx]=${item["callback"]}
+                # Store all the check box item's callbacks if requested
+                if [[ "$4" == "true" ]] && [[ "${item["callback"]}" != "" ]]; then
+                    callbacks[$idx]=${item["callback"]}
                     idx=$(($idx + 1))
                 fi
             else
@@ -448,14 +474,10 @@ MENU.Show() {
     printf "\n"
     echo "------------------------------------------------------------------------"
 
-    # First, call the menu's callback and the selected radio box callback
-    [[ "$2" == "true" ]] && ${context["callback"]}
-    [[ "$radio_item_cb" != "" ]] && ${radio_item_cb}
-
-    # Last, call all the callbacks of all the check box items
-    if [[ ${#check_box_cbs} -gt 0 ]]; then
-        for i in "${!check_box_cbs[@]}"; do
-            cb=${check_box_cbs[$i]}
+    # Last, call all the callbacks that needs to be called
+    if [[ ${#callbacks} -gt 0 ]]; then
+        for i in "${!callbacks[@]}"; do
+            cb=${callbacks[$i]}
             ${cb}
         done
     fi
@@ -499,8 +521,8 @@ MENU._debug_print() {
 #
 
 MENU.Demo() {
-    MENU.Create menu1 PLATFORM PL PlatformMenu_Cb
-
+    MENU.Create menu1 PLATFORM PL MENU.DemoPlCb
+: '
     MENU.Create menu2 Build Build PlatformMenu_Cb
     MENU.AddRadioBox menu2 Debug bug Menu1Item3_Cb
     MENU.AddRadioBox menu2 Release se Menu1Item3_Cb
@@ -511,11 +533,11 @@ MENU.Demo() {
     MENU.AddCheckBox menu2 "ISO C99" iso Menu1Item1_Cb
     MENU.Select menu2 Debug
     MENU.Check menu2 Pedantic
-
+'
     #MENU.SetStyle Menu1 default by-largest default default default
     #MENU.SetStyle Menu1 default default ${red} '○' default
 
-    MENU.AddRadioBox menu1 Linux nux Menu1Item1_Cb
+    MENU.AddRadioBox menu1 Linux nux MENU.DemoPlLinuxCb
     MENU.AddRadioBox menu1 Embed mbed Menu1Item2_Cb
 
     #MENU.AddLnBreak Menu1
@@ -525,15 +547,15 @@ MENU.Demo() {
     #MENU.AddDivider Menu1
     #MENU.AddLnBreak Menu1
 
-    MENU.AddRadioBox menu1 Qemu mu Menu1Item3_Cb
+    MENU.AddRadioBox menu1 Qemu mu MENU.DemoPlQemuCb
 
     MENU.Select menu1 Qemu
-    MENU.Check menu1 "Nx mode"
+    #MENU.Check menu1 "Nx mode"
 
     MENU._debug_print
 
     MENU.Show menu1
-    MENU.Show menu2
+    #MENU.Show menu2
 }
 
 demo
@@ -542,8 +564,23 @@ demo
 
 # Callbacks
 
-PlatformMenu_Cb() {
-    echo 'Menu.Platform.Callback...'
+MENU.DemoPlCb() {
+    echo ' * Main menu PLATFORM Callback...'
+    echo ' * ...'
+    echo "------------------------------------------------------------------------"
+
+}
+
+MENU.DemoPlQemuCb() {
+    echo ' * PLATFORM Qemu Callback...'
+    echo ' * ...'
+    echo "------------------------------------------------------------------------"
+}
+
+MENU.DemoPlLinuxCb() {
+    echo ' * PLATFORM Linux Callback...'
+    echo ' * ...'
+    echo "------------------------------------------------------------------------"
 }
 
 Menu2_Cb() {
@@ -566,9 +603,7 @@ Menu1Item2_Cb() {
     echo 'MN.Item2.Callback...'
 }
 
-Menu1Item3_Cb() {
-    echo 'MN.Item3.Callback...'
-}
+
 
 Menu1Check1_Cb() {
     echo 'PLATFORM.Check1.Callback...'
