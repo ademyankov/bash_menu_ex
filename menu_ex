@@ -1,6 +1,26 @@
 #!/bin/sh
 
 # -------------------------------------------------------------------
+#
+# Alex Demyankov
+# alex.demyankov@gmail.com
+#
+# -------------------------------------------------------------------
+
+# Global Map that holds all the menus created
+unset MENUMAP
+declare -A MENUMAP
+
+# Change to 'Debug' if you need logs and trace output
+unset MENUMODE
+declare -g MENUMODE='Debug'
+
+# Runs a demo example menu
+alias demo='MENU.Demo'
+
+# -------------------------------------------------------------------
+
+# -------------------------------------------------------------------
 # All kinds of cool stuff for environment
 #
 # Num  Colour    define          R G B
@@ -30,14 +50,18 @@ dim=`tput dim`    # Select dim (half-bright) mode
 smul=`tput smul`  # Enable underline mode
 rmul=`tput rmul`  # Disable underline mode
 smso=`tput smso`  # Enter standout (bold) mode
+rmso=`tput rmso`  # Exit standout mode
+rev=`tput rev`    # Turn on reverse video mode
 
-# tput rev     # Turn on reverse video mode
-# tput rmso    # Exit standout mode
-
+#
+# Functions acronims
 #
 # [IN] - input argument
 # [OUT] - output result
 # [OPT] - optional argument
+#
+# Functions named MENU._lover_case are private and not supposed to be
+# called directly
 #
 
 # -------------------------------------------------------------------
@@ -67,9 +91,7 @@ MENU._to_upper() {
 
 # Returns 'true' when debugging/testing
 MENU._is_debug() {
-    echo 'true'
-    # Release
-    #echo ''
+    [[ "$MENUMODE" == "Release" ]] && echo '' || echo 'true'
 }
 
 MENU._log() {
@@ -93,12 +115,6 @@ MENU._log_info() {
 }
 
 # -------------------------------------------------------------------
-# Global Map that holds all the menus created
-unset MENUMAP
-declare -A MENUMAP
-# -------------------------------------------------------------------
-
-# -------------------------------------------------------------------
 # Creates a new menu
 #
 # [IN]      arg1 - a menu's name (handle) to be used with MENU class
@@ -108,6 +124,10 @@ declare -A MENUMAP
 #
 # Remark: arg3 creates an alias for the menu unless the alias already
 # exists in the environment;
+#
+# Example:
+# MENU.Create menu1 PLATFORM PL
+#
 # -------------------------------------------------------------------
 MENU.Create() {
     if [[ $# -lt 1 ]]; then
@@ -160,7 +180,8 @@ MENU.Create() {
 # Remark: default can be passed as any [OPT] argument, which will set
 #         the default value for the style parameter
 #
-# Example: MENU.SetStyle Menu1 default default ${red} '○' default
+# Example:
+# MENU.SetStyle menu1 default default ${red} '○' default
 #
 # -------------------------------------------------------------------
 MENU.SetStyle() {
@@ -217,6 +238,11 @@ MENU.SetStyle() {
 #
 # If arg4 is not specified then MENU._dummy_callback is called for
 # an item
+#
+# Example:
+# MENU.AddRadioBox menu1 Item1 m1 Menu1Item1_Cb
+# MENU.AddRadioBox menu1 Item2 m2 Menu1Item2_Cb
+#
 # -------------------------------------------------------------------
 MENU._add_item() {
     if [[ $# -lt 2 ]]; then
@@ -226,7 +252,8 @@ MENU._add_item() {
 
     MENU._log_info "args: $*"
 
-    eval item_name="$3"
+    # if it's a 'divider' or 'ln-break'
+    #[[ $# -gt 2 ]] && eval item_name="$3" || item_name=''
 
     local -A item=()
     item["type"]=$1
@@ -258,7 +285,12 @@ MENU._add_item() {
 }
 
 MENU.AddRadioBox() {
-    local cmd="MENU._add_item radio-box $*"
+    # A trick to pass an item's name string as a variable to be able
+    # to use spaces in the name string, e.g. "Menu Item 1"
+    local menu_name=$1
+    local item_name="$2"
+    shift 2
+    local cmd="MENU._add_item radio-box $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -462,40 +494,53 @@ MENU._debug_print() {
     echo '----------------------------------------------------------------------------------------'
 }
 
-Create() {
-    MENU.Create Menu1 PLATFORM PL PlatformMenu_Cb
+# -------------------------------------------------------------------
+# Demo Example
+#
+
+MENU.Demo() {
+    MENU.Create menu1 PLATFORM PL PlatformMenu_Cb
+
+    MENU.Create menu2 Build Build PlatformMenu_Cb
+    MENU.AddRadioBox menu2 Debug bug Menu1Item3_Cb
+    MENU.AddRadioBox menu2 Release se Menu1Item3_Cb
+    MENU.AddDivider menu2
+    MENU.AddCheckBox menu2 Pedantic Pedant Menu1Item1_Cb
+    MENU.AddCheckBox menu2 Wall all Menu1Item1_Cb
+    MENU.AddCheckBox menu2 Werror err Menu1Item1_Cb
+    MENU.AddCheckBox menu2 "ISO C99" iso Menu1Item1_Cb
+    MENU.Select menu2 Debug
+    MENU.Check menu2 Pedantic
+
     #MENU.SetStyle Menu1 default by-largest default default default
     #MENU.SetStyle Menu1 default default ${red} '○' default
 
-    MENU.AddRadioBox Menu1 Item1 m1 Menu1Item1_Cb
-    MENU.AddRadioBox Menu1 Item2 m2 Menu1Item2_Cb
+    MENU.AddRadioBox menu1 Linux nux Menu1Item1_Cb
+    MENU.AddRadioBox menu1 Embed mbed Menu1Item2_Cb
 
     #MENU.AddLnBreak Menu1
     #MENU.AddDivider Menu1
-    nxcheck_name="Nx Check1"
-    ppcheck_name="PP Check1"
-    #MENU.AddCheckBox Menu1 "\${nxcheck_name}" k1 Menu1Check1_Cb
-    #MENU.AddCheckBox Menu1 "\${ppcheck_name}" k2 Menu1Check2_Cb
-    #MENU.AddCheckBox Menu1 "\"Nx Check1\"" k1 Menu1Check1_Cb
-    #MENU.AddCheckBox Menu1 "\"PP Check1\"" k2 Menu1Check2_Cb
-    MENU.AddCheckBox Menu1 "Nx Check1" k1 Menu1Check1_Cb
-    MENU.AddCheckBox Menu1 "PP Check2" k2 Menu1Check2_Cb
+    MENU.AddCheckBox menu1 "Nx mode" Nx Menu1Check1_Cb
+    MENU.AddCheckBox menu1 "PP mode" PP Menu1Check2_Cb
     #MENU.AddDivider Menu1
     #MENU.AddLnBreak Menu1
 
-    MENU.AddRadioBox Menu1 Item3 m3 Menu1Item3_Cb
+    MENU.AddRadioBox menu1 Qemu mu Menu1Item3_Cb
 
-    MENU.Select Menu1 Item3
-    MENU.Check Menu1 "Nx Check1"
+    MENU.Select menu1 Qemu
+    MENU.Check menu1 "Nx mode"
 
     MENU._debug_print
 
-    MENU.Show Menu1
+    MENU.Show menu1
+    MENU.Show menu2
 }
 
-Create
+demo
 
-##############################################
+# -------------------------------------------------------------------
+
+# Callbacks
 
 PlatformMenu_Cb() {
     echo 'Menu.Platform.Callback...'
@@ -533,4 +578,4 @@ Menu1Check2_Cb() {
     echo 'PLATFORM.Check2.Callback...'
 }
 
-##############################################
+# -------------------------------------------------------------------
