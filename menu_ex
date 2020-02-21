@@ -18,6 +18,7 @@ declare -g MENUBUILD='Debug'
 
 # Runs a demo example menu
 alias demo='MENU.Demo'
+alias dev='PL; GCC; LOGS'
 
 # -------------------------------------------------------------------
 
@@ -126,17 +127,17 @@ MENU._log_warning() {
 # exists in the environment;
 #
 # Example:
-# MENU.Create menu1 PLATFORM PL
+# MENU.Create pl_menu PLATFORM PL
 #
 # Remark: alias PL simply shows the menu and by default it does not
 #         fire any callbacks. PL alias is simply a substitution for:
 #
-#         MENU.Show menu1 false false flase
+#         MENU.Show pl_menu false false flase
 #
 #         MENU.Show has flags that can trigger any type of callbacks.
 #
 # For example:
-#   ~$ MENU.Show menu1 true true true
+#   ~$ MENU.Show pl_menu true true true
 #         which is equivalent to:
 #   ~$ PL true true true
 #         it will
@@ -200,7 +201,7 @@ MENU.Create() {
 #         the default value for the style parameter
 #
 # Example:
-# MENU.SetStyle menu1 default default ${red} '○' default
+# MENU.SetStyle pl_menu default default ${red} '○' default
 #
 # -------------------------------------------------------------------
 MENU.SetStyle() {
@@ -259,8 +260,8 @@ MENU.SetStyle() {
 # an item
 #
 # Example:
-# MENU.AddRadioBox menu1 Item1 m1 Menu1Item1_Cb
-# MENU.AddRadioBox menu1 Item2 m2 Menu1Item2_Cb
+# MENU.AddRadioBox pl_menu Item1 m1 Menu1Item1_Cb
+# MENU.AddRadioBox logs_menu Item2 m2 Menu1Item2_Cb
 #
 # -------------------------------------------------------------------
 MENU._add_item() {
@@ -595,7 +596,7 @@ MENU.Demo() {
     #             |     item                - a name of an item to be added into the menu
     #             |      |    alias         - short name as a selector for the menu's item
     #             |      |     |  callback  - callback to be called when the item is selected
-    MENU.Create menu1 PLATFORM PL MENU.DemoPlatformCb
+    MENU.Create pl_menu PLATFORM PL MENU.DemoPlatformCb
     # ----------------------------------------------------------------------------------------
 
     # --------------------------------------------------------------------------------------------------------------
@@ -607,7 +608,7 @@ MENU.Demo() {
     # 4 [OPT]       |      |       |       color                - the color of hightlighted items (green by default)
     # 5 [OPT]       |      |       |         |  symbol1         - the select symbol for the radio box when selected
     # 6 [OPT]       |      |       |         |     |  symbol2   - the check symbol for the check box when checked
-    #MENU.SetStyle menu1 default by-largest ${red} '○' default
+    #MENU.SetStyle pl_menu default by-largest ${red} '○' default
     # --------------------------------------------------------------------------------------------------------------
 
     # ----------------------------------------------------------------------------------------
@@ -617,49 +618,22 @@ MENU.Demo() {
     #                  |   item                 - a name of an item to be added into the menu
     #                  |    |    alias          - short name as a selector for the menu's item
     #                  |    |     |  callback   - callback to be called when the item is selected
-    MENU.AddRadioBox menu1 Linux nux MENU.DemoPlLinuxCb
+    MENU.AddRadioBox pl_menu Linux nux MENU.DemoPlLinuxCb
     # ----------------------------------------------------------------------------------------
 
-    MENU.AddRadioBox menu1 rpi3 pi3 MENU.DemoPlRpi3Cb
-
-    MENU.AddDivider menu1
-    MENU.AddLabel menu1 QEMU:
-    MENU.AddRadioBox menu1 v8 v8 MENU.DemoPlQemuCb
-    MENU.AddRadioBox menu1 arm32 arm MENU.DemoPlQemuCb
-
-    MENU.AddDivider menu1
-    MENU.AddLabel menu1 GCC:
-    MENU.AddCheckBox menu1 Pedantic Pedant MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox menu1 Wall all MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox menu1 Werror err MENU.DemoPlCheckBoxCb
-
-    #MENU.AddLnBreak Menu1
-    #MENU.AddDivider Menu1
-    #MENU.AddCheckBox menu1 "Nx mode" Nx MENU.DemoPlNxCheckCb
-    #MENU.AddCheckBox menu1 "PP mode" PP MENU.DemoPlPPCheckCb
-
-    #MENU.AddLnBreak menu1
-    #MENU.AddCheckBox menu1 Pedantic Pedant MENU.DemoPlCheckBoxCb
-    #MENU.AddCheckBox menu1 Wall all MENU.DemoPlCheckBoxCb
-    #MENU.AddCheckBox menu1 Werror err MENU.DemoPlCheckBoxCb
-    #MENU.AddCheckBox menu1 'ISO.C99' C99 MENU.DemoPlCheckBoxCb
-
-    #MENU.AddDivider Menu1
-    #MENU.AddLnBreak Menu1
-
+    MENU.AddRadioBox pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
+    MENU.AddDivider pl_menu
+    MENU.AddLabel pl_menu QEMU:
+    MENU.AddRadioBox pl_menu v8 v8 MENU.DemoPlQemuCb
+    MENU.AddRadioBox pl_menu arm32 arm MENU.DemoPlQemuCb
 
     # ----------------------------------------------------------------------------------------
     # Select an item of the menu
     #
     #           handle      - a name/handle of the menu to be used w/ the API
     #             |   item  - a name of an item to be set as 'selected' in the menu
-    MENU.Select menu1 Linux false
+    MENU.Select pl_menu Linux false
     # ----------------------------------------------------------------------------------------
-
-    MENU.Select menu1 Wall false
-    #MENU.Select menu1 Werror false
-
-    MENU._debug_print
 
     # ----------------------------------------------------------------------------------------
     # Show/display the menu
@@ -668,7 +642,7 @@ MENU.Demo() {
     #           |   flag1           - whether to call the main menu's callback
     #           |     |  flag2      - whether to call the selected radio box item's callback
     #           |     |    |  mode  - call mode of the check box callbacks [no (false), all (true), current, checked, unchecked]
-    MENU.Show menu1 true true all
+    MENU.Show pl_menu true true all
     #
     # no (false)    - do not call any callback for any check box itmes
     # all (true)    - call all the callbacks for all check box items regardless of the state
@@ -678,27 +652,34 @@ MENU.Demo() {
     #
     # ----------------------------------------------------------------------------------------
 
+    # TODO: make GCC work w/o callback
+    MENU.Create build_menu GCC GCC MENU.DemoPlatformCb
+    MENU.AddCheckBox build_menu Pedantic Pedant MENU.DemoPlCheckBoxCb
+    MENU.AddCheckBox build_menu Wall all MENU.DemoPlCheckBoxCb
+    MENU.AddCheckBox build_menu Werror err MENU.DemoPlCheckBoxCb
+    MENU.AddCheckBox build_menu fPIC PIC MENU.DemoPlCheckBoxCb
+    MENU.AddCheckBox build_menu isoC99 iso MENU.DemoPlCheckBoxCb
+    MENU.Select build_menu Wall false
+    MENU.Select build_menu Werror false
+    MENU.Show build_menu true true all
 
-    #
-    #
-    #
-    #
-    #
+    # TODO: lower case alias
+    # TODO: make work w/o alias
+    MENU.Create logs_menu LOGS LOGS MENU.DemoPlatformCb
+    MENU.SetStyle logs_menu default by-largest
+    MENU.AddRadioBox logs_menu FATAL fatal MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu SEVERE severe MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu WARNING warning MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu INFO info MENU.DemoLogsCb
+    MENU.AddLnBreak logs_menu
+    MENU.AddRadioBox logs_menu FINE fine MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu FINER finer MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu FINEST finest MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu OFF off MENU.DemoLogsCb
+    MENU.Select logs_menu INFO false
+    MENU.Show logs_menu true true
 
-: '
-    MENU.Create menu2 Build Build PlatformMenu_Cb
-    MENU.AddRadioBox menu2 Debug bug Menu1Item3_Cb
-    MENU.AddRadioBox menu2 Release se Menu1Item3_Cb
-    MENU.AddDivider menu2
-    MENU.AddCheckBox menu2 Pedantic Pedant Menu1Item1_Cb
-    MENU.AddCheckBox menu2 Wall all Menu1Item1_Cb
-    MENU.AddCheckBox menu2 Werror err Menu1Item1_Cb
-    MENU.AddCheckBox menu2 "ISO C99" iso Menu1Item1_Cb
-    MENU.Select menu2 Debug
-    MENU.Check menu2 Pedantic
-'
-    #MENU.Show menu2
-
+    #MENU._debug_print
 }
 
 # -------------------------------------------------------------------
@@ -738,6 +719,39 @@ MENU.DemoPlCheckBoxCb() {
             echo ' * ...'
             ;;
         PP-Mode)
+            echo ' * ...'
+            ;;
+    esac
+
+    echo '------------------------------------------------------------------------'
+}
+
+MENU.DemoLogsCb() {
+    echo " * LOGS.$1 Callback..."
+
+    case $1 in
+        FATAL)
+            echo ' * ...'
+            ;;
+        SEVERE)
+            echo ' * ...'
+            ;;
+        WARNING)
+            echo ' * ...'
+            ;;
+        INFO)
+            echo ' * ...'
+            ;;
+        FINE)
+            echo ' * ...'
+            ;;
+        FINER)
+            echo ' * ...'
+            ;;
+        FINEST)
+            echo ' * ...'
+            ;;
+        OFF)
             echo ' * ...'
             ;;
     esac
