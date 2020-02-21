@@ -18,7 +18,7 @@ declare -g MENUBUILD='Debug'
 
 # Runs a demo example menu
 alias demo='MENU.Demo'
-alias dev='PL; GCC; LOGS'
+alias dev='PL; Build; LOGS'
 
 # -------------------------------------------------------------------
 
@@ -632,7 +632,7 @@ MENU.Demo() {
     #
     #           handle      - a name/handle of the menu to be used w/ the API
     #             |   item  - a name of an item to be set as 'selected' in the menu
-    MENU.Select pl_menu Linux false
+    MENU.Select pl_menu rpi3 false
     # ----------------------------------------------------------------------------------------
 
     # ----------------------------------------------------------------------------------------
@@ -653,12 +653,18 @@ MENU.Demo() {
     # ----------------------------------------------------------------------------------------
 
     # TODO: make GCC work w/o callback
-    MENU.Create build_menu GCC GCC MENU.DemoPlatformCb
-    MENU.AddCheckBox build_menu Pedantic Pedant MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox build_menu Wall all MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox build_menu Werror err MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox build_menu fPIC PIC MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox build_menu isoC99 iso MENU.DemoPlCheckBoxCb
+    # TODO: make partial aliases
+    # TODO: check box all check/un-check
+    MENU.Create build_menu Build Build MENU.DemoBuild
+    MENU.AddRadioBox build_menu Debug dbg MENU.DemoBuildChange
+    MENU.AddRadioBox build_menu Release rls MENU.DemoBuildChange
+    MENU.AddDivider build_menu
+    MENU.AddCheckBox build_menu Pedantic Pedant MENU.DemoBuildGccFlags
+    MENU.AddCheckBox build_menu Wall all MENU.DemoBuildGccFlags
+    MENU.AddCheckBox build_menu Werror err MENU.DemoBuildGccFlags
+    MENU.AddCheckBox build_menu fPIC PIC MENU.DemoBuildGccFlags
+    MENU.AddCheckBox build_menu isoC99 iso MENU.DemoBuildGccFlags
+    MENU.Select build_menu Debug false
     MENU.Select build_menu Wall false
     MENU.Select build_menu Werror false
     MENU.Show build_menu true true all
@@ -683,8 +689,8 @@ MENU.Demo() {
 }
 
 # -------------------------------------------------------------------
-
-# Callbacks
+# Demo Callbacks
+#
 
 MENU.DemoPlatformCb() {
     echo " * $1: Main menu Callback..."
@@ -710,15 +716,47 @@ MENU.DemoPlRpi3Cb() {
     echo '------------------------------------------------------------------------'
 }
 
-MENU.DemoPlCheckBoxCb() {
+MENU.DemoBuild() {
+    echo " * $1: Main menu Callback..."
+    echo ' * ...'
+    echo '------------------------------------------------------------------------'
+}
+
+MENU.DemoBuildChange() {
+    echo " * Build.$1 Callback..."
+
+    case $1 in
+        Debug)
+            echo ' Setup Debug development environment...'
+            echo ' * ...'
+            ;;
+        Release)
+            echo ' Setup Release development environment...'
+            echo ' * ...'
+            ;;
+    esac
+
+    echo '------------------------------------------------------------------------'
+}
+
+MENU.DemoBuildGccFlags() {
     echo " * PL.$1 Callback..."
     echo " * state.[$2]"
 
     case $1 in
-        Nx-Mode)
+        Pedantic)
             echo ' * ...'
             ;;
-        PP-Mode)
+        Wall)
+            echo ' * ...'
+            ;;
+        Werror)
+            echo ' * ...'
+            ;;
+        fPIC)
+            echo ' * ...'
+            ;;
+        isoC99)
             echo ' * ...'
             ;;
     esac
