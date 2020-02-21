@@ -4,6 +4,8 @@
 #
 # Alex Demyankov
 # alex.demyankov@gmail.com
+# https://www.linkedin.com/in/ademyankov/
+# March, 2020
 #
 # -------------------------------------------------------------------
 
@@ -12,7 +14,7 @@ unset MENUMAP
 declare -A MENUMAP=()
 declare -a MENUORDER=()
 
-# Change to 'Debug' if you need logs and trace output
+# Change to 'Debug' if logs are needed logs
 unset MENUBUILD
 #declare -g MENUBUILD='Release'
 declare -g MENUBUILD='Debug'
@@ -428,7 +430,7 @@ MENU.Show() {
         return
     fi
 
-    echo "------------------------------------------------------------------------"
+    #echo "------------------------------------------------------------------------"
     MENU._log_info "ARGS: $*"
 
     eval "${MENUMAP["$1"]}"
@@ -543,7 +545,7 @@ MENU.Show() {
     done
 
     printf "\n"
-    echo "------------------------------------------------------------------------"
+    #echo "------------------------------------------------------------------------"
 
     # Last, call all the callbacks that needs to be called
     for i in "${!callbacks[@]}"; do
@@ -575,13 +577,20 @@ MENU.ShowAll() {
 
     if [ "$order" == "true" ]; then
         for i in "${!MENUORDER[@]}"; do
+            MENU._separator
             MENU.Show ${MENUORDER[$i]} $f1 $f2 $mode
         done
     else
         for menu in "${!MENUMAP[@]}"; do
+            MENU._separator
             MENU.Show $menu $f1 $f2 $mode
         done
     fi
+    MENU._separator
+}
+
+MENU._separator() {
+    echo "------------------------------------------------------------------------"
 }
 
 # arguments are comming from the menu's alias: $* f1 f2 mode
@@ -589,7 +598,10 @@ MENU._show() {
     [[ $# -gt 4 ]] && f1=$5 || f1='false'
     [[ $# -gt 5 ]] && f2=$6 || f2='false'
     [[ $# -gt 6 ]] && mode=$7 || mode='false'
+
+    MENU._separator
     MENU.Show $1 $f1 $f2 $mode
+    MENU._separator
 }
 
 MENU._debug_print() {
@@ -651,7 +663,7 @@ MENU.Demo() {
     #                  |   item                 - a name of an item to be added into the menu
     #                  |    |    alias          - short name as a selector for the menu's item
     #                  |    |     |  callback   - callback to be called when the item is selected
-    MENU.AddRadioBox pl_menu Linux nux MENU.DemoPlLinuxCb
+    MENU.AddRadioBox pl_menu Linux nux MENU.DemoMainMenu
     # ----------------------------------------------------------------------------------------
 
     MENU.AddRadioBox pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
@@ -685,11 +697,16 @@ MENU.Demo() {
     #
     # ----------------------------------------------------------------------------------------
 
+    # ********************   TODO LIST   ********************
     # TODO: make GCC work w/o callback
     # TODO: make partial aliases
     # TODO: check box all check/un-check
-    # TODO: .ShowAll
-    MENU.Create build_menu Build Build MENU.DemoBuild
+    # TODO: dynamic separator length
+    # TODO: lower case alias
+    # TODO: make work w/o alias
+    # ********************   TODO LIST   ********************
+
+    MENU.Create build_menu Build Build MENU.DemoMainMenu
     MENU.AddRadioBox build_menu Debug dbg MENU.DemoBuildChange
     MENU.AddRadioBox build_menu Release rls MENU.DemoBuildChange
     MENU.AddDivider build_menu
@@ -703,9 +720,7 @@ MENU.Demo() {
     MENU.Select build_menu Werror false
     MENU.Show build_menu true true all
 
-    # TODO: lower case alias
-    # TODO: make work w/o alias
-    MENU.Create logs_menu LOGS LOGS MENU.DemoPlatformCb
+    MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by-largest
     MENU.AddRadioBox logs_menu FATAL fatal MENU.DemoLogsCb
     MENU.AddRadioBox logs_menu SEVERE severe MENU.DemoLogsCb
@@ -726,10 +741,10 @@ MENU.Demo() {
 # Demo Callbacks
 #
 
-MENU.DemoPlatformCb() {
+MENU.DemoMainMenu() {
+    echo '------------------------------------------------------------------------'
     echo " * $1: Main menu Callback..."
     echo ' * ...'
-    echo '------------------------------------------------------------------------'
 }
 
 MENU.DemoPlQemuCb() {
@@ -746,12 +761,6 @@ MENU.DemoPlLinuxCb() {
 
 MENU.DemoPlRpi3Cb() {
     echo " * PL.$1: Callback..."
-    echo ' * ...'
-    echo '------------------------------------------------------------------------'
-}
-
-MENU.DemoBuild() {
-    echo " * $1: Main menu Callback..."
     echo ' * ...'
     echo '------------------------------------------------------------------------'
 }
