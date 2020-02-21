@@ -9,7 +9,8 @@
 
 # Global Map that holds all the menus created
 unset MENUMAP
-declare -A MENUMAP
+declare -A MENUMAP=()
+declare -a MENUORDER=()
 
 # Change to 'Debug' if you need logs and trace output
 unset MENUBUILD
@@ -18,7 +19,7 @@ declare -g MENUBUILD='Debug'
 
 # Runs a demo example menu
 alias demo='MENU.Demo'
-alias dev='PL; Build; LOGS'
+alias dev='MENU.ShowAll true'
 
 # -------------------------------------------------------------------
 
@@ -169,6 +170,7 @@ MENU.Create() {
     context["items"]=$(declare -p items)
 
     MENUMAP[$1]=$(declare -p context)
+    MENUORDER[${#MENUORDER[@]}]=$1
 
     local default="MENU.SetStyle $1"
     ${default}
@@ -551,12 +553,43 @@ MENU.Show() {
     done
 }
 
-# arguments are comming from the menu's alias: $* f1 f2 f3
+# -------------------------------------------------------------------
+# Displays all the menus created
+#
+# All the optional [BOOLEAN] arguments are 'false' by default:
+#
+# [IN][OPT] order - true to display in the order of creation
+# [IN][OPT] flag1 - whether to call the main manu's callback
+# [IN][OPT] flag2 - whether to call the selected item's callback
+# [IN][OPT] mode  -
+#
+# Remark: By default, the displaying order of the menus corresponds
+#         to the order of how the keys of the bash assosiative array
+#         are sorted
+# -------------------------------------------------------------------
+MENU.ShowAll() {
+    [[ $# -gt 0 ]] && order=$1 || order='false'
+    [[ $# -gt 1 ]] && f1=$2 || f1='false'
+    [[ $# -gt 2 ]] && f2=$3 || f2='false'
+    [[ $# -gt 3 ]] && mode=$4 || mode='false'
+
+    if [ "$order" == "true" ]; then
+        for i in "${!MENUORDER[@]}"; do
+            MENU.Show ${MENUORDER[$i]} $f1 $f2 $mode
+        done
+    else
+        for menu in "${!MENUMAP[@]}"; do
+            MENU.Show $menu $f1 $f2 $mode
+        done
+    fi
+}
+
+# arguments are comming from the menu's alias: $* f1 f2 mode
 MENU._show() {
     [[ $# -gt 4 ]] && f1=$5 || f1='false'
     [[ $# -gt 5 ]] && f2=$6 || f2='false'
-    [[ $# -gt 6 ]] && f3=$7 || f3='false'
-    MENU.Show $1 $f1 $f2 $f3
+    [[ $# -gt 6 ]] && mode=$7 || mode='false'
+    MENU.Show $1 $f1 $f2 $mode
 }
 
 MENU._debug_print() {
@@ -655,6 +688,7 @@ MENU.Demo() {
     # TODO: make GCC work w/o callback
     # TODO: make partial aliases
     # TODO: check box all check/un-check
+    # TODO: .ShowAll
     MENU.Create build_menu Build Build MENU.DemoBuild
     MENU.AddRadioBox build_menu Debug dbg MENU.DemoBuildChange
     MENU.AddRadioBox build_menu Release rls MENU.DemoBuildChange
