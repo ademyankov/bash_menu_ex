@@ -12,8 +12,9 @@ unset MENUMAP
 declare -A MENUMAP
 
 # Change to 'Debug' if you need logs and trace output
-unset MENUMODE
-declare -g MENUMODE='Debug'
+unset MENUBUILD
+declare -g MENUBUILD='Release'
+#declare -g MENUBUILD='Debug'
 
 # Runs a demo example menu
 alias demo='MENU.Demo'
@@ -89,11 +90,6 @@ MENU._to_upper() {
     echo "$(echo ${1} | awk '{print toupper($0)}')"
 }
 
-# Returns 'true' when debugging/testing
-MENU._is_debug() {
-    [[ "$MENUMODE" == "Release" ]] && echo '' || echo 'true'
-}
-
 MENU._log() {
     local marker="${green}${bold}INFO${reset}:"
     [[ "$1" == "WARNING" ]] && marker="${yellow}${bold}WARNING${reset}:"
@@ -111,7 +107,11 @@ MENU._warning() {
 }
 
 MENU._log_info() {
-    [[ "$(MENU._is_debug)" ]] && MENU._log INFO $1
+    [[ "$MENUBUILD" == "Debug" ]] && MENU._log INFO $1
+}
+
+MENU._log_warning() {
+    [[ "$MENUBUILD" == "Debug" ]] && MENU._log WARNING $1
 }
 
 # -------------------------------------------------------------------
@@ -156,6 +156,8 @@ MENU.Create() {
     context["name"]=''
     context["alias"]=''
     context["callback"]=''
+    context["checked"]=''
+    context["selected"]=''
 
     # Optional arguments
     [[ $# -gt 1 ]] && context["name"]=$2
@@ -174,7 +176,7 @@ MENU.Create() {
     if [[ "${context['alias']}" != '' ]] && [[ "${context['callback']}" != '' ]]; then
         if [ `alias | grep ${context['alias']} | wc -l` != 0 ]; then
             MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
-            [[ ! "$(MENU._is_debug)" ]] && return
+            [[ "$MENUBUILD" == "Release" ]] && return
         fi
         alias "${context['alias']}"="MENU._show $*"
     fi
@@ -293,7 +295,7 @@ MENU._add_item() {
     if [[ "${item['alias']}" != '' ]] && [[ "${item['callback']}" != '' ]]; then
         if [ `alias | grep ${item['alias']} | wc -l` != 0 ]; then
             MENU._warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
-            [[ ! "$(MENU._is_debug)" ]] && return
+            [[ "$MENUBUILD" == "Release" ]] && return
         fi
 
         # See Select command for the flags:                      X    1    2    mode
@@ -338,7 +340,7 @@ MENU.AddDivider() {
 # [IN][OPT] flagX - whether to call MENU.Show
 # [IN][OPT] flag1 - whether to call the main manu's callback
 # [IN][OPT] flag2 - whether to call the selected item's callback
-# [IN][OPT] flag3 - whether to call all callbacks of check box items
+# [IN][OPT] mode  - whether to call all callbacks of check box items
 #
 # Remark: The menu's item callback is launched when MENU.Show is
 #         executed
@@ -352,6 +354,8 @@ MENU.Select() {
 
     eval "${MENUMAP["$1"]}"
 
+    [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
+
     # We have to go through items[] first to check whether
     # the selected item is a check box type item
     eval "${context["items"]}"
@@ -362,6 +366,11 @@ MENU.Select() {
             [[ "${item["checked"]}" == "on" ]] && item["checked"]="off" || item["checked"]="on"
             items["$i"]=$(declare -p item)
             context["items"]=$(declare -p items)
+
+            # mode 'current' does not make sence if
+            MENU._log_warning "checked: $2"
+            [ "$flagX" == "true" ] && context["checked"]=$2
+
             check_box_set='true'
             MENU._log_info "CHECK BOX: '$2' state='${item["checked"]}'"
             break
@@ -375,7 +384,6 @@ MENU.Select() {
 
     MENU._log_info "ARGS: $*"
 
-    [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
     [[ $# -gt 3 ]] && flag1=$4 || flag1='false'
     [[ $# -gt 4 ]] && flag2=$5 || flag2='false'
     [[ $# -gt 5 ]] && mode=$6 || mode='false'
@@ -384,7 +392,7 @@ MENU.Select() {
     # true/false whether to call the main menu's callback in addition
     [[ $# -gt 6 ]] && flag1=$7 || flag1='false'
 
-    if [[ "$flagX" == "true" ]]; then
+    if [ "$flagX" == "true" ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
     fi
@@ -403,7 +411,7 @@ MENU.Select() {
 #
 # -------------------------------------------------------------------
 MENU.Show() {
-    if [[ $# -lt 1 ]]; then
+    if [ $# -lt 1 ]; then
         MENU._error "MENU.Show requires more arguments"
         return
     fi
@@ -424,7 +432,7 @@ MENU.Show() {
     local -a arguments=()
 
     # Store the main menu's callback to be called later
-    if [[ "$2" == "true" ]] && [[ "${context["callback"]}" != "" ]]; then
+    if [ "$2" == "true" ] && [ "${context["callback"]}" != "" ]; then
         callbacks[$idx]=${context["callback"]}
         arguments[$idx]=${context["name"]}
         idx=$(($idx + 1))
@@ -464,7 +472,7 @@ MENU.Show() {
                 printf "${color}${bold}(${context["radio-symbol"]}) ${name/$alias/$hi}${reset} "
 
                 # Store the radio box item's callback to be called later
-                if [[ "$3" == "true" ]] && [[ "${item["callback"]}" != "" ]]; then
+                if [ "$3" == "true" ] && [ "${item["callback"]}" != "" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]=${item["name"]}
                     idx=$(($idx + 1))
@@ -480,7 +488,7 @@ MENU.Show() {
             if [ "${item["checked"]}" == "on" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
-                if [[ "$mode" == "checked" ]]; then
+                if [ "$mode" == "checked" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
@@ -492,6 +500,18 @@ MENU.Show() {
                     arguments[$idx]="${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
                 fi
+            fi
+
+            if [ "${context["checked"]}" == "${item["name"]}" ] && [ "$mode" == 'current' ]; then
+                callbacks[$idx]=${item["callback"]}
+                arguments[$idx]="${item["name"]} ${item["checked"]}"
+                idx=$(($idx + 1))
+
+                MENU._log_warning "mode: $mode context[checked]: ${context["checked"]}"
+                MENU._log_warning "${item["callback"]} ${item["name"]} ${item["checked"]}"
+
+                context["checked"]=''
+                MENUMAP[$1]=$(declare -p context)
             fi
 
             # Store all the check box item's callbacks to be called later
@@ -525,7 +545,7 @@ MENU._show() {
 }
 
 MENU._debug_print() {
-    [[ ! "$(MENU._is_debug)" ]] && return
+    [[ "$MENUBUILD" == "Release" ]] && return
     for menu_key in "${!MENUMAP[@]}"; do
         echo '----------------------------------------------------------------------------------------'
         eval "${MENUMAP["$menu_key"]}" # unpack: context variable
