@@ -13,8 +13,8 @@ declare -A MENUMAP
 
 # Change to 'Debug' if you need logs and trace output
 unset MENUBUILD
-declare -g MENUBUILD='Release'
-#declare -g MENUBUILD='Debug'
+#declare -g MENUBUILD='Release'
+declare -g MENUBUILD='Debug'
 
 # Runs a demo example menu
 alias demo='MENU.Demo'
@@ -273,6 +273,7 @@ MENU._add_item() {
 
     # if it's a 'divider' or 'ln-break'
     #[[ $# -gt 2 ]] && eval item_name="$3" || item_name=''
+    eval item_name="$3"
 
     local -A item=()
     item["type"]=$1
@@ -324,6 +325,14 @@ MENU.AddCheckBox() {
 
 MENU.AddLnBreak() {
     local cmd="MENU._add_item ln-break $*"
+    ${cmd}
+}
+
+MENU.AddLabel() {
+    local menu_name=$1
+    local item_name="$2"
+    shift 2
+    local cmd="MENU._add_item label $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -462,6 +471,11 @@ MENU.Show() {
             continue;
         fi
 
+        if [ "$type" == "label" ]; then
+            printf "$name "
+            continue;
+        fi
+
         local alias=${item["alias"]}
         local color=${context["color"]}
         local selected=${context["selected"]}
@@ -581,7 +595,7 @@ MENU.Demo() {
     #             |     item                - a name of an item to be added into the menu
     #             |      |    alias         - short name as a selector for the menu's item
     #             |      |     |  callback  - callback to be called when the item is selected
-    MENU.Create menu1 PLATFORM PL MENU.DemoMenuCb
+    MENU.Create menu1 PLATFORM PL MENU.DemoPlatformCb
     # ----------------------------------------------------------------------------------------
 
     # --------------------------------------------------------------------------------------------------------------
@@ -606,28 +620,44 @@ MENU.Demo() {
     MENU.AddRadioBox menu1 Linux nux MENU.DemoPlLinuxCb
     # ----------------------------------------------------------------------------------------
 
-    MENU.AddRadioBox menu1 Embed mbed MENU.DemoPlEmbedCb
+    MENU.AddRadioBox menu1 rpi3 pi3 MENU.DemoPlRpi3Cb
+
+    MENU.AddDivider menu1
+    MENU.AddLabel menu1 QEMU:
+    MENU.AddRadioBox menu1 v8 v8 MENU.DemoPlQemuCb
+    MENU.AddRadioBox menu1 arm32 arm MENU.DemoPlQemuCb
+
+    MENU.AddDivider menu1
+    MENU.AddLabel menu1 GCC:
+    MENU.AddCheckBox menu1 Pedantic Pedant MENU.DemoPlCheckBoxCb
+    MENU.AddCheckBox menu1 Wall all MENU.DemoPlCheckBoxCb
+    MENU.AddCheckBox menu1 Werror err MENU.DemoPlCheckBoxCb
 
     #MENU.AddLnBreak Menu1
     #MENU.AddDivider Menu1
     #MENU.AddCheckBox menu1 "Nx mode" Nx MENU.DemoPlNxCheckCb
     #MENU.AddCheckBox menu1 "PP mode" PP MENU.DemoPlPPCheckCb
-    MENU.AddCheckBox menu1 "Nx-Mode" Nx MENU.DemoPlCheckBoxCb
-    MENU.AddCheckBox menu1 "PP-Mode" PP MENU.DemoPlCheckBoxCb
+
+    #MENU.AddLnBreak menu1
+    #MENU.AddCheckBox menu1 Pedantic Pedant MENU.DemoPlCheckBoxCb
+    #MENU.AddCheckBox menu1 Wall all MENU.DemoPlCheckBoxCb
+    #MENU.AddCheckBox menu1 Werror err MENU.DemoPlCheckBoxCb
+    #MENU.AddCheckBox menu1 'ISO.C99' C99 MENU.DemoPlCheckBoxCb
+
     #MENU.AddDivider Menu1
     #MENU.AddLnBreak Menu1
 
-    MENU.AddRadioBox menu1 Qemu mu MENU.DemoPlQemuCb
 
     # ----------------------------------------------------------------------------------------
     # Select an item of the menu
     #
     #           handle      - a name/handle of the menu to be used w/ the API
     #             |   item  - a name of an item to be set as 'selected' in the menu
-    MENU.Select menu1 Qemu false
+    MENU.Select menu1 Linux false
     # ----------------------------------------------------------------------------------------
 
-    MENU.Select menu1 Nx-Mode false
+    MENU.Select menu1 Wall false
+    #MENU.Select menu1 Werror false
 
     MENU._debug_print
 
@@ -675,11 +705,10 @@ MENU.Demo() {
 
 # Callbacks
 
-MENU.DemoMenuCb() {
+MENU.DemoPlatformCb() {
     echo " * $1: Main menu Callback..."
     echo ' * ...'
     echo '------------------------------------------------------------------------'
-
 }
 
 MENU.DemoPlQemuCb() {
@@ -694,7 +723,7 @@ MENU.DemoPlLinuxCb() {
     echo '------------------------------------------------------------------------'
 }
 
-MENU.DemoPlEmbedCb() {
+MENU.DemoPlRpi3Cb() {
     echo " * PL.$1: Callback..."
     echo ' * ...'
     echo '------------------------------------------------------------------------'
