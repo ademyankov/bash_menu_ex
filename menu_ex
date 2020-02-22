@@ -1,30 +1,28 @@
 #!/bin/sh
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Customizable console menu to organize different environment settings
 #
 # Alex Demyankov
 # alex.demyankov@gmail.com
 # https://www.linkedin.com/in/ademyankov/
+#
 # March, 2020
 #
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 # Global Map that holds all the menus created
 unset MENUMAP
 declare -A MENUMAP=()
+
+# Tracks the order of menus created
+unset MENUORDER
 declare -a MENUORDER=()
 
-# Change to 'Debug' if logs are needed logs
+# Change to 'Debug' if logs are needed
 unset MENUBUILD
 #declare -g MENUBUILD='Release'
 declare -g MENUBUILD='Debug'
-
-# Runs a demo example menu
-alias demo='MENU.Demo'
-alias dev='MENU.ShowAll true'
-
-# A special string that represents 'no string' for an optional string argument
-null='MENU.Null'
 
 # -------------------------------------------------------------------
 
@@ -61,23 +59,30 @@ smso=`tput smso`  # Enter standout (bold) mode
 rmso=`tput rmso`  # Exit standout mode
 rev=`tput rev`    # Turn on reverse video mode
 
+# -------------------------------------------------------------------
 #
-# Functions acronims
+# Functions and parameters acronims
 #
-# [IN] - input argument
-# [OUT] - output result
+# [IN]  - input argument
 # [OPT] - optional argument
+# [OUT] - output result
 #
-# Functions named MENU._lover_case are private and not supposed to be
-# called directly
+# MENU.Null - is a special string that represents 'no string' for an optional string argument;
+# it can be usefull when an optional string argument is in the middle of the arguments list
+# For example: MENU.Create menu1 MENU.Null MENU.Null Menu1Function
+# In case of MENU.Create menu1 '' '' Menu1Function it would be impossible to separate one parameter
+# from the others inside the function
 #
+# Functions named MENU._lover_case are private and are not supposed to be called directly
+#
+# -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
 # Pads a string with 'space' chars to the length specified
 #
-# [IN] arg1 - a string to pad
-# [IN] arg2 - the length of the output string
-# [OUT] returns the padded arg1 string
+# [IN] string - a string to pad
+# [IN] length - the length the output string should be
+# [OUT] returns the padded string
 #
 # -------------------------------------------------------------------
 MENU._string_pad() {
@@ -626,77 +631,6 @@ MENU._debug_print() {
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-MENU.Demo() {
-    # -----------------------------------------------------------------------------------------------------------------
-    # Create a menu
-    #
-    # 1           handle                      - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]       |     name                - a displayed name of the menu
-    # 3 [OPT]       |      |     alias        - an alias to be created that displays the menu
-    # 4 [OPT]       |      |      |  callback - a function to be called when the menu is displayed
-    #MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
-    MENU.Create pl_menu $null PL MENU.DemoMainMenu
-    # -----------------------------------------------------------------------------------------------------------------
-    # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
-    # 'PL' usage examples:
-    # > PL              - displays the menu
-    # > PL true         - displays the menu + the main menu's callback is called
-    # > PL false true   - displays the menu + the selected radio box item's callback is called
-    # > PL true true    - displays the menu + both selected item and the main menu's callbacks are called
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Set the style for a menu
-    #
-    # 1           handle                                        - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]       |    divider                                - devider to be used w/ .AddDivider ('|' by default)
-    # 3 [OPT]       |      |    alignment                       - alignent of the item names (none by default)
-    # 4 [OPT]       |      |       |       color                - the color of hightlighted items (green by default)
-    # 5 [OPT]       |      |       |         |  symbol1         - the select symbol for the radio box when selected
-    # 6 [OPT]       |      |       |         |     |  symbol2   - the check symbol for the check box when checked
-    #MENU.SetStyle pl_menu default by-largest ${red} '○' default
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Add a radio-box item into the menu
-    #
-    #                handle                     - a name/handle of the menu to be used w/ the API
-    #                  |   item                 - a name of an item to be added into the menu
-    #                  |    |    alias          - short name as a selector for the menu's item
-    #                  |    |     |  callback   - callback to be called when the item is selected
-    MENU.AddRadioBox pl_menu Linux nux MENU.DemoMainMenu
-    # -----------------------------------------------------------------------------------------------------------------
-
-    MENU.AddRadioBox pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
-    MENU.AddDivider pl_menu
-    MENU.AddLabel pl_menu QEMU:
-    MENU.AddRadioBox pl_menu v8 v8 MENU.DemoPlQemuCb
-    MENU.AddRadioBox pl_menu arm32 arm MENU.DemoPlQemuCb
-
-    # ----------------------------------------------------------------------------------------
-    # Select an item of the menu
-    #
-    #           handle      - a name/handle of the menu to be used w/ the API
-    #             |   item  - a name of an item to be set as 'selected' in the menu
-    MENU.Select pl_menu rpi3 false
-    # ----------------------------------------------------------------------------------------
-
-    # ----------------------------------------------------------------------------------------
-    # Show/display the menu
-    #
-    #         handle                - a name/handle of the menu to be used w/ the API
-    #           |   flag1           - whether to call the main menu's callback
-    #           |     |  flag2      - whether to call the selected radio box item's callback
-    #           |     |    |  mode  - call mode of the check box callbacks [no (false), all (true), current, checked, unchecked]
-    MENU.Show pl_menu true true all
-    #
-    # no (false)    - do not call any callback for any check box itmes
-    # all (true)    - call all the callbacks for all check box items regardless of the state
-    # current       - call the callback of the check box item that changes the state (.Select only)
-    # checked       - call all the callbacks for all checked check box items
-    # unchecked     - call all the callbacks for all un-checked check box items
-    #
-    # ----------------------------------------------------------------------------------------
 
     # ********************   TODO LIST   ********************
     # TODO: make MainMenu work w/o callback: MENU.Null
@@ -706,6 +640,118 @@ MENU.Demo() {
     # TODO: lower case alias
     # TODO: make work w/o alias
     # ********************   TODO LIST   ********************
+
+
+#source menu_ex
+
+alias demo='MENU.Demo'
+alias dev='MENU.ShowAll true'
+
+MENU.Demo() {
+    null='MENU.Null'
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Create a menu
+    #
+    # 1           handle                     - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]       |     name               - a displayed name of the menu
+    # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
+    # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
+    MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
+    #MENU.Create pl_menu $null PL MENU.DemoMainMenu
+    #MENU.Create pl_menu $null $null MENU.DemoMainMenu
+    #MENU.Create pl_menu
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
+    #
+    # 1 [OPT]  flag1           - whether to call the menu's callback
+    # 2 [OPT]   |    flag2     - whether to call the radio box item's callback
+    # 3 [OPT]   |     |   mode - call-mode of the check box callbacks [no (false), all (true), checked, unchecked]
+    # > PL    false false all
+    #
+    # 'PL' usage examples:
+    # > PL                 - displays the menu
+    # > PL true            - displays the menu + calls the menu's callback
+    # > PL false true      - displays the menu + calls the selected radio box item's callback
+    # > PL true true       - displays the menu + calls both the selected item and the main menu's callbacks
+    # > PL false false all - displays the menu + calls all the radio box item's callbacks
+    # -----------------------------------------------------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Set the menu's style
+    #
+    # 1           handle                                         - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]       |    divider                                 - devider to be used w/ .AddDivider ('|' by default)
+    # 3 [OPT]       |      |    alignment                        - alignent of the item names (none by default)
+    # 4 [OPT]       |      |       |        color                - the color of hightlighted items (green by default)
+    # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio box when selected
+    # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check box when checked
+    #MENU.SetStyle pl_menu default by-largest ${red} '○' default
+    # -----------------------------------------------------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Add a radio-box item into the menu
+    #
+    # 1               handle                    - a name/handle of the menu to be used w/ the API
+    # 2                 |    name               - an item's name to be added into the menu
+    # 3 [OPT]           |     |    alias        - an alias to be created that triggers the item's callback
+    # 4 [OPT]           |     |     |  callback - a function to be called when an item is selected
+    MENU.AddRadioBox pl_menu Linux nux MENU.DemoPlLinuxCb
+    #MENU.AddRadioBox pl_menu Linux $null MENU.DemoPlLinuxCb
+    #MENU.AddRadioBox pl_menu Linux
+    #
+    # In the example invocation #2, there is no alias for item 'Linux', so the only way to call it by using
+    # the .Select command, like so: MENU.Select pl_menu Linux true false true
+    # Please, look into .Select command demo to understand all the flags
+    #
+    # -----------------------------------------------------------------------------------------------------------------
+    # Under the hood 'nux' is just an alias for: 'MENU.Select pl_menu Linux true false true'
+    #
+    # 1 [OPT]  flag1     - whether to call the main menu's callback
+    # 2 [OPT]   |   mode - call-mode of the check box callbacks [no (false), all (true), checked, unchecked]
+    # > nux    true no
+    #
+    # 'nux' usage examples:
+    # > nux          - selects 'Linux' item, displays the 'PLATFORM' menu and triggers the 'Linux' item's callback
+    # > nux true     - all the above + triggers the 'PLATFORM' menu's callback
+    # > nux true all - all the above + triggers all the check box item's callbacks (if any)
+    # -----------------------------------------------------------------------------------------------------------------
+
+    MENU.AddRadioBox pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
+    MENU.AddDivider pl_menu
+    MENU.AddLabel pl_menu QEMU:
+    MENU.AddRadioBox pl_menu v8 v8 MENU.DemoPlQemuCb
+    MENU.AddRadioBox pl_menu arm32 arm MENU.DemoPlQemuCb
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Select an item of the menu
+    #
+    #           handle                             - a name/handle of the menu to be used w/ the API
+    #             |    name                        - a name of an item to be set as 'selected' in the menu
+    #             |     |   show                   -
+    #             |     |    |    flag1            -
+    #             |     |    |     |    flag2      -
+    #             |     |    |     |     |    mode -
+    MENU.Select pl_menu rpi3 false false true no
+    # -----------------------------------------------------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Show/display the menu
+    #
+    #         handle                - a name/handle of the menu to be used w/ the API
+    #           |   flag1           - whether to call the main menu's callback
+    #           |     |  flag2      - whether to call the selected radio box item's callback
+    #           |     |    |  mode  - call mode of the check box callbacks [no (false), all (true), checked, unchecked]
+    MENU.Show pl_menu true true all
+    #
+    # no (false)    - do not call any callback for any check box itmes
+    # all (true)    - call all the callbacks for all check box items regardless of the state
+    # current       - call the callback of the check box item that changes the state (.Select only)
+    # checked       - call all the callbacks for all checked check box items
+    # unchecked     - call all the callbacks for all un-checked check box items
+    #
+    # -----------------------------------------------------------------------------------------------------------------
 
     MENU.Create build_menu Build $null MENU.DemoMainMenu
     #
