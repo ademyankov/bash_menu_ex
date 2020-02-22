@@ -406,6 +406,57 @@ MENU.Select() {
     fi
 }
 
+
+#
+# Performs an operation for all check-box items in the menu
+#
+# MENU.CheckBoxForAll build_menu flip true false false checked
+#
+MENU.CheckBoxForAll() {
+    if [ $# -lt 2 ]; then
+        MENU._error "MENU.CheckBoxAll requires more arguments"
+        return
+    fi
+
+    MENU._log_info "ARGS: $*"
+
+    eval "${MENUMAP["$1"]}"
+    eval "${context["items"]}"
+
+    local changed='false'
+    for i in "${!items[@]}"; do
+        eval "${items["$i"]}"
+
+        [ "${item["type"]}" != "check-box" ] && continue;
+
+        local updated='false'
+        case $2 in
+            check)
+                [ "${item["checked"]}" == "off" ] && item["checked"]="on"; updated='true'
+                ;;
+            uncheck)
+                [ "${item["checked"]}" == "on" ] && item["checked"]="off"; updated='true'
+                ;;
+            flip)
+                [ "${item["checked"]}" == "on" ] && item["checked"]="off" || item["checked"]="on"
+                updated='true'
+                ;;
+        esac
+        [ "$updated" == 'true' ] && items["$i"]=$(declare -p item); context["items"]=$(declare -p items); changed='true'
+    done
+
+    [ "$changed" == 'true' ] && MENUMAP[$1]=$(declare -p context)
+
+    [[ $# -gt 2 ]] && show=$3 || show='false'
+    [[ $# -gt 3 ]] && flag1=$4 || flag1='false'
+    [[ $# -gt 4 ]] && flag2=$5 || flag1='false'
+    [[ $# -gt 5 ]] && mode=$6 || mode='false'
+
+    if [ "$show" == "true" ]; then
+        MENU.Show $1 $flag1 $flag2 $mode
+    fi
+}
+
 # -------------------------------------------------------------------
 # Displays a menu
 #
@@ -635,7 +686,7 @@ MENU._debug_print() {
     # ********************   TODO LIST   ********************
     # TODO: make MainMenu work w/o callback: MENU.Null
     # TODO: make partial aliases
-    # TODO: check box all check/un-check
+    # TODO: check box all check/un-check/flip
     # TODO: dynamic separator length
     # TODO: lower case alias
     # TODO: make work w/o alias
@@ -670,7 +721,7 @@ MENU.Demo() {
     # 3 [OPT]   |     |   mode - call-mode of the check box callbacks [no (false), all (true), checked, unchecked]
     # > PL    false false all
     #
-    # 'PL' usage examples:
+    # 'PL' alias usage examples:
     # > PL                 - displays the menu
     # > PL true            - displays the menu + calls the menu's callback
     # > PL false true      - displays the menu + calls the selected radio box item's callback
@@ -701,7 +752,7 @@ MENU.Demo() {
     #MENU.AddRadioBox pl_menu Linux $null MENU.DemoPlLinuxCb
     #MENU.AddRadioBox pl_menu Linux
     #
-    # In the example invocation #2, there is no alias for item 'Linux', so the only way to call it by using
+    # In the invocation example #2, there is no alias for item 'Linux', so the only way to call it is by using
     # the .Select command, like so: MENU.Select pl_menu Linux true false true
     # Please, look into .Select command demo to understand all the flags
     #
@@ -712,7 +763,7 @@ MENU.Demo() {
     # 2 [OPT]   |   mode - call-mode of the check box callbacks [no (false), all (true), checked, unchecked]
     # > nux    true no
     #
-    # 'nux' usage examples:
+    # 'nux' alias usage examples:
     # > nux          - selects 'Linux' item, displays the 'PLATFORM' menu and triggers the 'Linux' item's callback
     # > nux true     - all the above + triggers the 'PLATFORM' menu's callback
     # > nux true all - all the above + triggers all the check box item's callbacks (if any)
