@@ -23,6 +23,9 @@ declare -g MENUBUILD='Debug'
 alias demo='MENU.Demo'
 alias dev='MENU.ShowAll true'
 
+# A special string that represents 'no string' for an optional string argument
+null='MENU.Null'
+
 # -------------------------------------------------------------------
 
 # -------------------------------------------------------------------
@@ -118,38 +121,17 @@ MENU._log_warning() {
     [[ "$MENUBUILD" == "Debug" ]] && MENU._log WARNING $1
 }
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Creates a new menu
 #
-# [IN]      arg1 - a name/handle of the menu to be used w/ the API
-# [IN][OPT] arg2 - a menu's name to be displayed
-# [IN][OPT] arg3 - short name as a selector for the menu's name
-# [IN][OPT] arg4 - a callback to be called when the menu is selected
+# [IN]      handle   - a name/handle of the menu to be used w/ the API
+# [IN][OPT] name     - a displayed name of the menu
+# [IN][OPT] alias    - an alias to be created that displays the menu
+# [IN][OPT] callback - a function to be called when the menu is displayed
 #
-# Remark: arg3 creates an alias for the menu unless the alias already
-# exists in the environment;
-#
-# Example:
-# MENU.Create pl_menu PLATFORM PL
-#
-# Remark: alias PL simply shows the menu and by default it does not
-#         fire any callbacks. PL alias is simply a substitution for:
-#
-#         MENU.Show pl_menu false false flase
-#
-#         MENU.Show has flags that can trigger any type of callbacks.
-#
-# For example:
-#   ~$ MENU.Show pl_menu true true true
-#         which is equivalent to:
-#   ~$ PL true true true
-#         it will
-#         trigger all callbacks (main menu's callback, currently
-#         selected radio box callback and all callbacks for all the
-#         check boxies)
-#         So, you can do tricks with aliases, like so:
-#         alias pl='PL true true'
-# -------------------------------------------------------------------
+# Remark: The 'alias' parameter creates the alias for the menu unless the alias
+#         already exists in the environment
+# -----------------------------------------------------------------------------
 MENU.Create() {
     if [[ $# -lt 1 ]]; then
         MENU._error "MENU.Create requires more arguments"
@@ -157,16 +139,18 @@ MENU.Create() {
     fi
 
     local -A context=()
-    context["name"]=''
-    context["alias"]=''
-    context["callback"]=''
+    context["name"]='MENU.Null'
+    context["alias"]='MENU.Null'
+    context["callback"]='MENU.Null'
     context["checked"]=''
     context["selected"]=''
 
+    MENU._log_info "args: $*"
+
     # Optional arguments
-    [[ $# -gt 1 ]] && context["name"]=$2
-    [[ $# -gt 2 ]] && context["alias"]=$3
-    [[ $# -gt 3 ]] && context["callback"]=$4
+    [ $# -gt 1 ] && context["name"]=$2
+    [ $# -gt 2 ] && context["alias"]=$3
+    [ $# -gt 3 ] && context["callback"]=$4
 
     local -a items=()
     context["items"]=$(declare -p items)
@@ -178,12 +162,13 @@ MENU.Create() {
     ${default}
 
     # Create an alias to display the menu
-    if [[ "${context['alias']}" != '' ]] && [[ "${context['callback']}" != '' ]]; then
+    if [ "${context['alias']}" != '' ]; then
         if [ `alias | grep ${context['alias']} | wc -l` != 0 ]; then
             MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
-            [[ "$MENUBUILD" == "Release" ]] && return
+            [ "$MENUBUILD" == "Release" ] && return
         fi
-        alias "${context['alias']}"="MENU._show $*"
+        local argc="$1 ${context["name"]} ${context["alias"]} ${context["callback"]}"
+        alias "${context['alias']}"="MENU._show ${argc}"
     fi
 }
 
@@ -283,9 +268,13 @@ MENU._add_item() {
     local -A item=()
     item["type"]=$1
     item["name"]=$item_name
-    item["alias"]=$4
-    item["callback"]=$5
     item["checked"]='off' # used for 'checkbox' mode only
+    item["alias"]='MENU.Null'
+    item["callback"]='MENU.Null'
+
+    # Optional arguments
+    [ $# -gt 3 ] && item["alias"]=$4
+    [ $# -gt 4 ] && item["callback"]=$5
 
     eval "${MENUMAP["$2"]}"
     eval "${context["items"]}"
@@ -435,7 +424,7 @@ MENU.Show() {
 
     eval "${MENUMAP["$1"]}"
 
-    if [ ${context['name']} != "" ]; then
+    if [ "${context["name"]}" != "MENU.Null" ]; then
         printf " * ${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}: "
     fi
 
@@ -446,7 +435,7 @@ MENU.Show() {
     local -a arguments=()
 
     # Store the main menu's callback to be called later
-    if [ "$2" == "true" ] && [ "${context["callback"]}" != "" ]; then
+    if [ "$2" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
         callbacks[$idx]=${context["callback"]}
         arguments[$idx]=${context["name"]}
         idx=$(($idx + 1))
@@ -491,7 +480,7 @@ MENU.Show() {
                 printf "${color}${bold}(${context["radio-symbol"]}) ${name/$alias/$hi}${reset} "
 
                 # Store the radio box item's callback to be called later
-                if [ "$3" == "true" ] && [ "${item["callback"]}" != "" ]; then
+                if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]=${item["name"]}
                     idx=$(($idx + 1))
@@ -507,21 +496,21 @@ MENU.Show() {
             if [ "${item["checked"]}" == "on" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
-                if [ "$mode" == "checked" ]; then
+                if [ "$mode" == "checked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
                 fi
             else
                 printf "[ ] ${name/$alias/${smul}$alias${reset}} "
-                if [ "$mode" == "unchecked" ]; then
+                if [ "$mode" == "unchecked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
                 fi
             fi
 
-            if [ "${context["checked"]}" == "${item["name"]}" ] && [ "$mode" == 'current' ]; then
+            if [ "${context["checked"]}" == "${item["name"]}" ] && [ "$mode" == 'current' ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                 callbacks[$idx]=${item["callback"]}
                 arguments[$idx]="${item["name"]} ${item["checked"]}"
                 idx=$(($idx + 1))
@@ -534,7 +523,7 @@ MENU.Show() {
             fi
 
             # Store all the check box item's callbacks to be called later
-            if [ "$mode" == "all" ] || [ "$mode" == "true" ]; then
+            if [ "$mode" == "all" ] || [ "$mode" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                 callbacks[$idx]=${item["callback"]}
                 arguments[$idx]="${item["name"]} ${item["checked"]}"
                 idx=$(($idx + 1))
@@ -595,6 +584,8 @@ MENU._separator() {
 
 # arguments are comming from the menu's alias: $* f1 f2 mode
 MENU._show() {
+    MENU._log_info "args: $*"
+
     [[ $# -gt 4 ]] && f1=$5 || f1='false'
     [[ $# -gt 5 ]] && f2=$6 || f2='false'
     [[ $# -gt 6 ]] && mode=$7 || mode='false'
@@ -629,22 +620,32 @@ MENU._debug_print() {
     echo '----------------------------------------------------------------------------------------'
 }
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
+#
 # Demo Example
 #
+# ---------------------------------------------------------------------------------------------------------------------
 
 MENU.Demo() {
-    # ----------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------
     # Create a menu
     #
-    #           handle                      - a name/handle of the menu to be used w/ the API
-    #             |     item                - a name of an item to be added into the menu
-    #             |      |    alias         - short name as a selector for the menu's item
-    #             |      |     |  callback  - callback to be called when the item is selected
-    MENU.Create pl_menu PLATFORM PL MENU.DemoPlatformCb
-    # ----------------------------------------------------------------------------------------
+    # 1           handle                      - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]       |     name                - a displayed name of the menu
+    # 3 [OPT]       |      |     alias        - an alias to be created that displays the menu
+    # 4 [OPT]       |      |      |  callback - a function to be called when the menu is displayed
+    #MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
+    MENU.Create pl_menu $null PL MENU.DemoMainMenu
+    # -----------------------------------------------------------------------------------------------------------------
+    # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
+    # 'PL' usage examples:
+    # > PL              - displays the menu
+    # > PL true         - displays the menu + the main menu's callback is called
+    # > PL false true   - displays the menu + the selected radio box item's callback is called
+    # > PL true true    - displays the menu + both selected item and the main menu's callbacks are called
+    # -----------------------------------------------------------------------------------------------------------------
 
-    # --------------------------------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------
     # Set the style for a menu
     #
     # 1           handle                                        - a name/handle of the menu to be used w/ the API
@@ -654,9 +655,9 @@ MENU.Demo() {
     # 5 [OPT]       |      |       |         |  symbol1         - the select symbol for the radio box when selected
     # 6 [OPT]       |      |       |         |     |  symbol2   - the check symbol for the check box when checked
     #MENU.SetStyle pl_menu default by-largest ${red} '○' default
-    # --------------------------------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------
     # Add a radio-box item into the menu
     #
     #                handle                     - a name/handle of the menu to be used w/ the API
@@ -664,7 +665,7 @@ MENU.Demo() {
     #                  |    |    alias          - short name as a selector for the menu's item
     #                  |    |     |  callback   - callback to be called when the item is selected
     MENU.AddRadioBox pl_menu Linux nux MENU.DemoMainMenu
-    # ----------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------
 
     MENU.AddRadioBox pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
     MENU.AddDivider pl_menu
@@ -698,7 +699,7 @@ MENU.Demo() {
     # ----------------------------------------------------------------------------------------
 
     # ********************   TODO LIST   ********************
-    # TODO: make GCC work w/o callback
+    # TODO: make MainMenu work w/o callback: MENU.Null
     # TODO: make partial aliases
     # TODO: check box all check/un-check
     # TODO: dynamic separator length
@@ -706,7 +707,16 @@ MENU.Demo() {
     # TODO: make work w/o alias
     # ********************   TODO LIST   ********************
 
-    MENU.Create build_menu Build Build MENU.DemoMainMenu
+    MENU.Create build_menu Build $null MENU.DemoMainMenu
+    #
+    # if there is no alias for the menu you can call it through
+    # MENU API directly or create your own alias
+    #
+    # > MENU.Show build_menu
+    # > alias b='MENU.Show build_menu'
+    # > alias b='MENU._separator; MENU.Show build_menu; MENU._separator'
+    #
+
     MENU.AddRadioBox build_menu Debug dbg MENU.DemoBuildChange
     MENU.AddRadioBox build_menu Release rls MENU.DemoBuildChange
     MENU.AddDivider build_menu
@@ -722,17 +732,21 @@ MENU.Demo() {
 
     MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by-largest
-    MENU.AddRadioBox logs_menu FATAL fatal MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu SEVERE severe MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu WARNING warning MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu INFO info MENU.DemoLogsCb
+
+    MENU.AddRadioBox logs_menu FATAL $null MENU.DemoLogsCb
+    # alias fatal='MENU._separator; MENU.Select logs_menu FATAL true false true; MENU._separator'
+
+    MENU.AddRadioBox logs_menu SEVERE $null MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu WARNING $null MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu INFO $null MENU.DemoLogsCb
     MENU.AddLnBreak logs_menu
-    MENU.AddRadioBox logs_menu FINE fine MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu FINER finer MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu FINEST finest MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu OFF off MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu FINE $null MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu FINER $null MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu FINEST $null MENU.DemoLogsCb
+    MENU.AddRadioBox logs_menu OFF $null MENU.DemoLogsCb
     MENU.Select logs_menu INFO false
     MENU.Show logs_menu true true
+
 
     #MENU._debug_print
 }
