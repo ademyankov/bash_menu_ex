@@ -144,6 +144,7 @@ MENU._warning() {
 #
 # Remark: The 'alias' parameter creates the alias for the menu unless the alias
 #         already exists in the environment
+#
 # -----------------------------------------------------------------------------
 MENU.Create() {
     if [[ $# -lt 1 ]]; then
@@ -202,7 +203,7 @@ MENU.Create() {
 # Remark: 'default' can be passed as any [OPT] argument, which will set the
 #         default value for the corresponding style parameter
 #
-# For example:
+# Example:
 #
 # > MENU.SetStyle menu1 default default ${red} '○' default
 #
@@ -305,8 +306,8 @@ MENU._add_item() {
 #
 # Example:
 #
-# > MENU.AddRadioButton pl_menu Item1 m1 Menu1Item1_Cb
-# > MENU.AddRadioButton logs_menu Item2 m2 Menu1Item2_Cb
+# > MENU.AddRadioButton MyMenu1 Item1 m1 Menu1Item1_Cb
+# > MENU.AddRadioButton MyMenu1 Item2 m2 Menu1Item2_Cb
 #
 # -----------------------------------------------------------------------------
 MENU.AddRadioButton() {
@@ -350,13 +351,19 @@ MENU.AddDivider() {
 #
 # [IN]      arg1  - name of the menu
 # [IN]      arg2  - name of the item to be selected
-# [IN][OPT] flagX - whether to call MENU.Show
-# [IN][OPT] flag1 - whether to call the main manu's callback
-# [IN][OPT] flag2 - whether to call the selected item's callback
-# [IN][OPT] mode  - whether to call all callbacks of check button items
 #
-# Remark: The menu's item callback is launched when MENU.Show is
-#         executed
+# The rest of the arguments are 'false' by default:
+#
+# [IN][OPT] show  - {true/false} whether to call MENU.Show
+# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
+# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
+# [IN][OPT] mode  - call-mode of all the check button item's callbacks
+#
+# DEMO: For example, the following command selects 'Release' radio-button in
+#       the demo 'Build' menu, shows the 'Build' menu, and calls the 'Release'
+#       radio-button's callbacks:
+#
+# > MENU.Select build_menu Release true false true fals
 #
 # -----------------------------------------------------------------------------
 MENU.Select() {
@@ -413,7 +420,7 @@ MENU.Select() {
 # Performs an operation for all the check-button items in the menu
 #
 # [IN] name - a name/handle of the menu
-# [IN] operation - a type of operation to perform on all the check-button items:
+# [IN] operation - a type of operation to perform on all the check-buttons:
 #       check   - check all the check-button items
 #       uncheck - un-check all the check-button itmes
 #       flip    - flip the state of all the check-button itmes
@@ -423,13 +430,13 @@ MENU.Select() {
 # [IN][OPT] show  - {true/false} whether to call MENU.Show
 # [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
-# [IN][OPT] mode  - call-mode of all the check button item's callbacks
+# [IN][OPT] mode  - call-mode of all the check-button item's callbacks
 #
-# DEMO: For example, the following command flips all the check-button items in the
+# DEMO: For example, the following command flips all the check-buttons in the
 #       demo 'Build' menu, shows the 'Build' menu, and calls all the checked
-#       check-button item's callbacks:
+#       check-button's callbacks:
 #
-#       > MENU.CheckButtonForAll build_menu flip true false false checked
+# > MENU.CheckButtonForAll build_menu flip true false false checked
 #
 # -----------------------------------------------------------------------------
 MENU.CheckButtonForAll() {
@@ -477,8 +484,8 @@ MENU.CheckButtonForAll() {
     fi
 }
 
-# -------------------------------------------------------------------
-# Displays a menu
+# -----------------------------------------------------------------------------
+# Displays the menu
 #
 # [IN] name - a name/handle of the menu
 #
@@ -487,13 +494,21 @@ MENU.CheckButtonForAll() {
 # [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
 # [IN][OPT] mode  - call-mode of all the check button item's callbacks:
-#            no (false)   - do not call any callback for any check button itmes
-#            all (true)   - call all the callbacks for all check button items regardless of the state
-#            current      - call the callback of the check button item that changes the state (.Select only)
-#            checked      - call all the callbacks for all checked check button items
-#            unchecked    - call all the callbacks for all un-checked check button items
+#            no (false)   - do not call any callback for any item
+#            all (true)   - call all the callbacks for all check-button items
+#                           regardless of its state
+#            current      - call the callback of the check-button items that
+#                           changes the state (.Select command only)
+#            checked      - call all the callbacks for all checked check-buttons
+#            unchecked    - call all the callbacks for all un-checked
+#                           check-buttons
 #
-# -------------------------------------------------------------------
+# DEMO: For example, the following command simply shows/displays the demo
+#       'PLATFORM' menu w/o calling any callbacks:
+#
+# > MENU.Show pl_menu false false false
+#
+# -----------------------------------------------------------------------------
 MENU.Show() {
     if [ $# -lt 1 ]; then
         MENU._error "MENU.Show requires more arguments"
@@ -615,7 +630,7 @@ MENU.Show() {
 
     printf "\n"
 
-    # Last, call all the callbacks that needs to be called
+    # Last, call all the callbacks with its arguments that needs to be called
     for i in "${!callbacks[@]}"; do
         cb=${callbacks[$i]}
         [[ "${arguments[$i]}" ]] && cb+=" ${arguments[$i]}"
@@ -623,20 +638,21 @@ MENU.Show() {
     done
 }
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Displays all the menus created
 #
 # All the optional arguments are 'false' by default:
 #
-# [IN][OPT] order - {true/false} whether to display all the menus in the order of its creation
+# [IN][OPT] order - {true/false} whether to display all the menus in the order
+#           of how the menus were created
 # [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
-# [IN][OPT] mode  - call-mode of all the check button item's callbacks
+# [IN][OPT] mode  - call-mode of all the check-button item's callbacks
 #
-# Remark: By default, the displaying order of the menus corresponds
-#         to the order of how the keys of the bash assosiative array
-#         are sorted
-# -------------------------------------------------------------------
+# Remark: By default, the displaying order of the menus corresponds to the
+#         order of how the keys of the bash's assosiative array are sorted
+#
+# -----------------------------------------------------------------------------
 MENU.ShowAll() {
     [[ $# -gt 0 ]] && order=$1 || order='false'
     [[ $# -gt 1 ]] && f1=$2 || f1='false'
