@@ -158,11 +158,18 @@ MENU.Create() {
     context["callback"]='MENU.Null'
     context["checked"]=''
     context["selected"]=''
+    context["item-len-max"]=0   # the max char length of an item's name
+    context["menu-width"]=0     # the length of the longest string in the menu (used for menu's separator)
 
     MENU._log_info "args: $*"
 
     # Optional arguments
-    [ $# -gt 1 ] && context["name"]=$2
+    if [ $# -gt 1 ]; then
+        context["name"]=$2
+        context["menu-width"]=${#2}
+        ((context["menu-width"] += 4 )) # ' * ' + ':'
+    fi
+
     [ $# -gt 2 ] && context["alias"]=$3
     [ $# -gt 3 ] && context["callback"]=$4
 
@@ -222,7 +229,6 @@ MENU.SetStyle() {
     context["color"]=${green}
     context["radio-symbol"]='♦'
     context["check-symbol"]='x'
-    context["max-len"]=0
 
     # Optional arguments
     [[ $# -gt 1 && "$2" != "default" ]] && context["divider"]=$2
@@ -249,14 +255,12 @@ MENU._add_item() {
 
     MENU._log_info "args: $*"
 
-    # if it's a 'divider' or 'ln-break'
-    #[[ $# -gt 2 ]] && eval item_name="$3" || item_name=''
     eval item_name="$3"
 
     local -A item=()
     item["type"]=$1
     item["name"]=$item_name
-    item["checked"]='off' # used for 'checkbutton' mode only
+    item["checked"]='off' # used for 'check-button' items only
     item["alias"]='MENU.Null'
     item["callback"]='MENU.Null'
 
@@ -270,6 +274,21 @@ MENU._add_item() {
     items[${#items[@]}]=$(declare -p item)
     context["items"]=$(declare -p items)
     [[ ${context["item-len-max"]} -lt ${#item["name"]} ]] && context["item-len-max"]=${#item["name"]}
+
+    local item_width=${#item["name"]}
+    case ${item['type']} in
+        check-button | radio-button)
+            ((item_width+=5)) # ' ' + '[ ]' + ' '
+            ;;
+        divider)
+            ((item_width+=1)) # ' '
+            ;;
+        label)
+            ((item_width+=2)) # ': '
+            ;;
+    esac
+
+    ((context["menu-width"]+=$item_width))
     MENUMAP[$2]=$(declare -p context)
 
     [[ "${item['type']}" != "radio-button" && "${item['type']}" != "check-button" ]] && return
@@ -283,7 +302,7 @@ MENU._add_item() {
 
         # See Select command for the flags:                      X    1    2    mode
         [[ "${item['type']}" == "radio-button" ]] && local flags="true false true false" || local flags="true false false current"
-        alias "${item['alias']}"="MENU.Select $2 \"${item["name"]}\" $flags"
+        alias "${item['alias']}"="MENU._select $2 \"${item["name"]}\" $flags"
     fi
 }
 
@@ -674,20 +693,41 @@ MENU.ShowAll() {
 }
 
 MENU._separator() {
-    echo "------------------------------------------------------------------------"
+    if [ $# -gt 0 ]; then
+        eval "${MENUMAP["$1"]}"
+        ss="printf -- '-%.0s' {1..${context["menu-width"]}}"
+        eval $ss
+        echo ""
+    else
+        echo "------------------------------------------------------------------------"
+    fi
 }
 
 # arguments are comming from the main menu's alias: $* f1 f2 mode
 MENU._show() {
-    MENU._log_info "args: $*"
-
     [[ $# -gt 4 ]] && f1=$5 || f1='false'
     [[ $# -gt 5 ]] && f2=$6 || f2='false'
     [[ $# -gt 6 ]] && mode=$7 || mode='false'
 
-    MENU._separator
+    MENU._separator $1
     MENU.Show $1 $f1 $f2 $mode
-    MENU._separator
+    MENU._separator $1
+}
+
+#                 1      2    3     4    5    6
+# MENU.Select: pl_menu Linux true false true false
+MENU._select() {
+    [[ $# -gt 3 ]] && f1=$4 || f1='false'
+    [[ $# -gt 4 ]] && f2=$5 || f2='false'
+    [[ $# -gt 5 ]] && mode=$6 || mode='false'
+
+    MENU.Select $1 $2
+
+    if [ $# -gt 2 ] && [ "$3" == "true" ]; then
+        MENU._separator
+        MENU.Show $1 $f1 $f2 $mode
+        MENU._separator
+    fi
 }
 
 MENU._debug_print() {
@@ -722,11 +762,14 @@ MENU._debug_print() {
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-    # ********************   TODO LIST   ********************
-    # TODO: dynamic separator length
-    # TODO: lower case alias
-    # TODO: make work w/o alias
-    # ********************   TODO LIST   ********************
+# ********************   TODO LIST   ********************
+# TODO: print separator true/false, true - by default
+# TODO: separator char, '-' by default
+# TODO: radio-box open char '(', close char ')'
+# TODO: check-box open char '[', close char ']'
+# TODO: dynamic separator length
+# TODO: lower case alias ???
+# ********************   TODO LIST   ********************
 
 
 #source menu_ex
@@ -775,6 +818,7 @@ MENU.Demo() {
     # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio button when selected
     # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default by-largest ${red} '○' default
+    #MENU.SetStyle pl_menu default by-largest
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -807,6 +851,7 @@ MENU.Demo() {
 
     MENU.AddRadioButton pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
     MENU.AddDivider pl_menu
+    #MENU.AddLnBreak pl_menu
     MENU.AddLabel pl_menu QEMU:
     MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
     MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
@@ -862,7 +907,7 @@ MENU.Demo() {
     MENU.Select build_menu Debug false
     MENU.Select build_menu Wall false
     MENU.Select build_menu Werror false
-    MENU.Show build_menu true true all
+    #MENU.Show build_menu true true all
 
     MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by-largest
@@ -879,7 +924,7 @@ MENU.Demo() {
     MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
     MENU.Select logs_menu INFO false
-    MENU.Show logs_menu true true
+    #MENU.Show logs_menu true true
 
 
     #MENU._debug_print
