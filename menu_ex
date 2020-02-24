@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Customizable console menu to organize different environment settings
 #
 # Alex Demyankov
@@ -9,7 +9,7 @@
 #
 # March, 2020
 #
-# ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # Global Map that holds all the menus created
 unset MENUMAP
@@ -24,9 +24,9 @@ unset MENUBUILD
 #declare -g MENUBUILD='Release'
 declare -g MENUBUILD='Debug'
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # All kinds of cool stuff for environment
 #
 # Num  Colour    define          R G B
@@ -39,7 +39,7 @@ declare -g MENUBUILD='Debug'
 # 6    cyan      COLOR_CYAN      0,1,1
 # 7    white     COLOR_WHITE     1,1,1
 #
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 black=`tput setaf 0`
 red=`tput setaf 1`
 green=`tput setaf 2`
@@ -59,7 +59,7 @@ smso=`tput smso`  # Enter standout (bold) mode
 rmso=`tput rmso`  # Exit standout mode
 rev=`tput rev`    # Turn on reverse video mode
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 #
 # Functions and parameters acronims
 #
@@ -67,41 +67,49 @@ rev=`tput rev`    # Turn on reverse video mode
 # [OPT] - optional argument
 # [OUT] - output result
 #
-# MENU.Null - is a special string that represents 'no string' for an optional string argument;
-# it can be usefull when an optional string argument is in the middle of the arguments list
-# For example: MENU.Create menu1 MENU.Null MENU.Null Menu1Function
-# In case of MENU.Create menu1 '' '' Menu1Function it would be impossible to separate one parameter
-# from the others inside the function
+# MENU.Null - is a special string that represents 'no string' for an optional
+#             string argument; it can be usefull when an optional string
+#             argument is in the middle of the arguments list, For example:
+#             "MENU.Create menu1 MENU.Null MENU.Null Menu1Function". In case of
+#             "MENU.Create menu1 '' '' Menu1Function" it would be impossible to
+#             separate one parameter from the others inside the function
 #
-# Functions named MENU._lover_case are private and are not supposed to be called directly
+# MENU._lover_case - functions, named in such a way, are private and are not
+#                    supposed to be called directly, but nothing prevents it
 #
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Pads a string with 'space' chars to the length specified
 #
 # [IN] string - a string to pad
 # [IN] length - the length the output string should be
 # [OUT] returns the padded string
 #
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 MENU._string_pad() {
     local len=$(($2 - ${#1}))
     pad=`printf '%*s' "$len" | tr ' ' " "`
     echo "$1$pad"
 }
 
-# -------------------------------------------------------------------
-# Converts a string to an upper chars string
+# -----------------------------------------------------------------------------
+# Converts a string to an upper case string
 #
-# [IN] arg1 - string to convert
-# [OUT] returns a converted string
+# [IN] string - a string to convert
+# [OUT] returns the converted string
 #
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 MENU._to_upper() {
     echo "$(echo ${1} | awk '{print toupper($0)}')"
 }
 
+# -----------------------------------------------------------------------------
+# Helper functions to display log/trace
+#
+# [IN] string - a log's mode, supported: {INFO, WARNING, SEVERE}
+#
+# -----------------------------------------------------------------------------
 MENU._log() {
     local marker="${green}${bold}INFO${reset}:"
     [[ "$1" == "WARNING" ]] && marker="${yellow}${bold}WARNING${reset}:"
@@ -110,20 +118,20 @@ MENU._log() {
     echo "${FUNCNAME[2]}: $marker $*"
 }
 
-MENU._error() {
-  MENU._log SEVERE $1
-}
-
-MENU._warning() {
-  MENU._log WARNING $1
-}
-
 MENU._log_info() {
     [[ "$MENUBUILD" == "Debug" ]] && MENU._log INFO $1
 }
 
 MENU._log_warning() {
     [[ "$MENUBUILD" == "Debug" ]] && MENU._log WARNING $1
+}
+
+MENU._error() {
+  MENU._log SEVERE $1
+}
+
+MENU._warning() {
+  MENU._log WARNING $1
 }
 
 # -----------------------------------------------------------------------------
@@ -177,27 +185,28 @@ MENU.Create() {
     fi
 }
 
-# -------------------------------------------------------------------
-# Sets the style for a menu
+# -----------------------------------------------------------------------------
+# Sets the style for the menu
 #
-# [IN]      arg1 - a name/handle of the menu to be used w/ the API
-# [IN][OPT] arg2 - divider ('|' by default)
-# [IN][OPT] arg3 - alignment (none by default):
-#             'by-largest' - aligns all the menu's items by the
-#                            length of the largest item's name
-# [IN][OPT] arg4 - the color of hightlighted items (green by default)
-# [IN][OPT] arg5 - the symbol for the radio box (menu) selected
-#                  ('♦' by default)
-# [IN][OPT] arg6 - the symbol for the check box selected
-#                  ('x' by default)
+# [IN]      handle  - a name/handle of the menu to be used w/ the API
+# [IN][OPT] divider - a divider to be used w/ .AddDivider ('|' by default)
 #
-# Remark: default can be passed as any [OPT] argument, which will set
-#         the default value for the style parameter
+# [IN][OPT] align   - the menu's items alignment (none by default), supported:
+#             by-largest - aligns all the menu's items by the length of the
+#                          largest item's name
 #
-# Example:
-# MENU.SetStyle pl_menu default default ${red} '○' default
+# [IN][OPT] color   - the color of the selected item (green by default)
+# [IN][OPT] symbol1 - the symbol for the selected radio-button ('♦' by default)
+# [IN][OPT] symbol2 - the symbol for the cheched check-button ('x' by default)
 #
-# -------------------------------------------------------------------
+# Remark: 'default' can be passed as any [OPT] argument, which will set the
+#         default value for the corresponding style parameter
+#
+# For example:
+#
+# > MENU.SetStyle menu1 default default ${red} '○' default
+#
+# -----------------------------------------------------------------------------
 MENU.SetStyle() {
     if [[ $# -lt 1 ]]; then
       MENU._error "MENU.SetStyle requires more arguments"
@@ -224,40 +233,13 @@ MENU.SetStyle() {
     MENUMAP[$1]=$(declare -p context)
 }
 
-# -------------------------------------------------------------------
-# Add a item into a menu
+# -----------------------------------------------------------------------------
+# [IN] type - the type of an item to be added, supported types:
+#       {radio-button, check-button, divider, ln-break}
 #
-# [IN]      arg1 - type of the item, supported types are:
-#           'radio-box', 'check-box', 'divider', 'ln-break'
-# [IN]      arg2 - a name/handle of the menu to be used w/ the API
-# [IN]      arg3 - a name of an item to be added into the menu
-# [IN][OPT] arg4 - short name as a selector for the menu's item
-# [IN][OPT] arg5 - callback to be called when the item is selected
+# [IN] $* - the rest of arguments comes from the public .Add function
 #
-# Remark: arg4 creates an alias for the menu's item unless the alias
-# already exists
-#
-# Remark: arg3 has to be part of the item name to be highlighted,
-# if arg2 = 'Item1', and arg3 = 'em1' then the 'em1' will be the
-# alias and will be highlighted when the menu is displayed; if the
-# selector is not part of the name, e.g. 'I1' then the alias still
-# will be creaded but the selector in the menu will not be highlighted
-#
-# If arg3 is not specified then the item can be selected via the menu
-# alias + the name of the item
-#
-# Remark: arg4 callback when is called there are 2 arguments passed
-# into the callbak: [IN] arg1 - menu name, [IN] arg2 - item name;
-# For an example, please, look MENU._dummy_callback
-#
-# If arg4 is not specified then MENU._dummy_callback is called for
-# an item
-#
-# Example:
-# MENU.AddRadioBox pl_menu Item1 m1 Menu1Item1_Cb
-# MENU.AddRadioBox logs_menu Item2 m2 Menu1Item2_Cb
-#
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 MENU._add_item() {
     if [[ $# -lt 2 ]]; then
         MENU._error "MENU.AddItem requires more arguments"
@@ -273,7 +255,7 @@ MENU._add_item() {
     local -A item=()
     item["type"]=$1
     item["name"]=$item_name
-    item["checked"]='off' # used for 'checkbox' mode only
+    item["checked"]='off' # used for 'checkbutton' mode only
     item["alias"]='MENU.Null'
     item["callback"]='MENU.Null'
 
@@ -289,7 +271,7 @@ MENU._add_item() {
     [[ ${context["item-len-max"]} -lt ${#item["name"]} ]] && context["item-len-max"]=${#item["name"]}
     MENUMAP[$2]=$(declare -p context)
 
-    [[ "${item['type']}" != "radio-box" && "${item['type']}" != "check-box" ]] && return
+    [[ "${item['type']}" != "radio-button" && "${item['type']}" != "check-button" ]] && return
 
     # Create an alias to call the menu's callback
     if [[ "${item['alias']}" != '' ]] && [[ "${item['callback']}" != '' ]]; then
@@ -299,26 +281,49 @@ MENU._add_item() {
         fi
 
         # See Select command for the flags:                      X    1    2    mode
-        [[ "${item['type']}" == "radio-box" ]] && local flags="true false true false" || local flags="true false false current"
+        [[ "${item['type']}" == "radio-button" ]] && local flags="true false true false" || local flags="true false false current"
         alias "${item['alias']}"="MENU.Select $2 \"${item["name"]}\" $flags"
     fi
 }
 
-MENU.AddRadioBox() {
+# -----------------------------------------------------------------------------
+# Add a item into a menu
+#
+# [IN]      handle   - a handle of the menu
+# [IN]      name     - a name of an item to be added into the menu
+# [IN][OPT] alias    - an alias to be created that selects the item
+# [IN][OPT] callback - a function to be called when the item is selected
+#
+# Remark: The 'alias' parameter creates the alias for the item unless the alias
+#         already exists in the environment; If 'alias' is part of the name,
+#         for example item item = 'MyItem1' alias = 'em1', then the alias 'em1'
+#         will be hightlighted (underlined) when displayed.
+#
+# Remark: When the item's 'callback' is called there are 2 arguments passed
+#         into the callbak: [IN] name - the menu name and [IN] item - the
+#         selected item name;
+#
+# Example:
+#
+# > MENU.AddRadioButton pl_menu Item1 m1 Menu1Item1_Cb
+# > MENU.AddRadioButton logs_menu Item2 m2 Menu1Item2_Cb
+#
+# -----------------------------------------------------------------------------
+MENU.AddRadioButton() {
     # A trick to pass an item's name string as a variable to be able
     # to use spaces in the name string, e.g. "Menu Item 1"
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item radio-box $menu_name \"\${item_name}\" $*"
+    local cmd="MENU._add_item radio-button $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
-MENU.AddCheckBox() {
+MENU.AddCheckButton() {
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item check-box $menu_name \"\${item_name}\" $*"
+    local cmd="MENU._add_item check-button $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -340,20 +345,20 @@ MENU.AddDivider() {
     ${cmd}
 }
 
-# -------------------------------------------------------------------
-# Specifies a menu's item to be selected by default
+# -----------------------------------------------------------------------------
+# Selects an item in the menu
 #
 # [IN]      arg1  - name of the menu
 # [IN]      arg2  - name of the item to be selected
 # [IN][OPT] flagX - whether to call MENU.Show
 # [IN][OPT] flag1 - whether to call the main manu's callback
 # [IN][OPT] flag2 - whether to call the selected item's callback
-# [IN][OPT] mode  - whether to call all callbacks of check box items
+# [IN][OPT] mode  - whether to call all callbacks of check button items
 #
 # Remark: The menu's item callback is launched when MENU.Show is
 #         executed
 #
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 MENU.Select() {
     if [[ $# -lt 2 ]]; then
         MENU._error "MENU.Select requires more arguments"
@@ -365,28 +370,26 @@ MENU.Select() {
     [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
 
     # We have to go through items[] first to check whether
-    # the selected item is a check box type item
+    # the selected item is a check button type item
     eval "${context["items"]}"
-    local check_box_set
+    local check_button_set
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
-        if [[ "${item["name"]}" == $2 ]] && [[ "${item["type"]}" == "check-box" ]]; then
+        if [[ "${item["name"]}" == $2 ]] && [[ "${item["type"]}" == "check-button" ]]; then
             [[ "${item["checked"]}" == "on" ]] && item["checked"]="off" || item["checked"]="on"
             items["$i"]=$(declare -p item)
             context["items"]=$(declare -p items)
 
-            # mode 'current' does not make sence if
-            MENU._log_warning "checked: $2"
             [ "$flagX" == "true" ] && context["checked"]=$2
-
-            check_box_set='true'
             MENU._log_info "CHECK BOX: '$2' state='${item["checked"]}'"
+
+            check_button_set='true'
             break
         fi
     done
 
-    # Set selected if radio box type item
-    [[ ! "$check_box_set" ]] && context["selected"]=$2
+    # Set selected if the itme's type is the radio-button
+    [[ ! "$check_button_set" ]] && context["selected"]=$2
 
     MENUMAP[$1]=$(declare -p context)
 
@@ -406,15 +409,32 @@ MENU.Select() {
     fi
 }
 
-
+# -----------------------------------------------------------------------------
+# Performs an operation for all the check-button items in the menu
 #
-# Performs an operation for all check-box items in the menu
+# [IN] name - a name/handle of the menu
+# [IN] operation - a type of operation to perform on all the check-button items:
+#       check   - check all the check-button items
+#       uncheck - un-check all the check-button itmes
+#       flip    - flip the state of all the check-button itmes
 #
-# MENU.CheckBoxForAll build_menu flip true false false checked
+# The rest of the arguments are 'false' by default:
 #
-MENU.CheckBoxForAll() {
+# [IN][OPT] show  - {true/false} whether to call MENU.Show
+# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
+# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
+# [IN][OPT] mode  - call-mode of all the check button item's callbacks
+#
+# DEMO: For example, the following command flips all the check-button items in the
+#       demo 'Build' menu, shows the 'Build' menu, and calls all the checked
+#       check-button item's callbacks:
+#
+#       > MENU.CheckButtonForAll build_menu flip true false false checked
+#
+# -----------------------------------------------------------------------------
+MENU.CheckButtonForAll() {
     if [ $# -lt 2 ]; then
-        MENU._error "MENU.CheckBoxAll requires more arguments"
+        MENU._error "MENU.CheckButtonForAll requires more arguments"
         return
     fi
 
@@ -427,7 +447,7 @@ MENU.CheckBoxForAll() {
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        [ "${item["type"]}" != "check-box" ] && continue;
+        [ "${item["type"]}" != "check-button" ] && continue;
 
         local updated='false'
         case $2 in
@@ -460,13 +480,18 @@ MENU.CheckBoxForAll() {
 # -------------------------------------------------------------------
 # Displays a menu
 #
-# [IN] arg1 - a name/handle of the menu to be used w/ the API
+# [IN] name - a name/handle of the menu
 #
-# The rest of the [BOOLEAN] arguments are 'false' by default:
+# The rest of the arguments are 'false' by default:
 #
-# [IN][OPT] flag1 - whether to call the main manu's callback
-# [IN][OPT] flag2 - whether to call the selected item's callback
-# [IN][OPT] mode  -
+# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
+# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
+# [IN][OPT] mode  - call-mode of all the check button item's callbacks:
+#            no (false)   - do not call any callback for any check button itmes
+#            all (true)   - call all the callbacks for all check button items regardless of the state
+#            current      - call the callback of the check button item that changes the state (.Select only)
+#            checked      - call all the callbacks for all checked check button items
+#            unchecked    - call all the callbacks for all un-checked check button items
 #
 # -------------------------------------------------------------------
 MENU.Show() {
@@ -475,7 +500,6 @@ MENU.Show() {
         return
     fi
 
-    #echo "------------------------------------------------------------------------"
     MENU._log_info "ARGS: $*"
 
     eval "${MENUMAP["$1"]}"
@@ -530,12 +554,12 @@ MENU.Show() {
         local color=${context["color"]}
         local selected=${context["selected"]}
 
-        if [ "$type" == "radio-box" ]; then
+        if [ "$type" == "radio-button" ]; then
             if [ "${item["name"]}" == "$selected" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
                 printf "${color}${bold}(${context["radio-symbol"]}) ${name/$alias/$hi}${reset} "
 
-                # Store the radio box item's callback to be called later
+                # Store the radio button item's callback to be called later
                 if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]=${item["name"]}
@@ -547,7 +571,7 @@ MENU.Show() {
             continue;
         fi
 
-        if [ "$type" == "check-box" ]; then
+        if [ "$type" == "check-button" ]; then
             local mode=$4
             if [ "${item["checked"]}" == "on" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
@@ -578,7 +602,7 @@ MENU.Show() {
                 MENUMAP[$1]=$(declare -p context)
             fi
 
-            # Store all the check box item's callbacks to be called later
+            # Store all the check button item's callbacks to be called later
             if [ "$mode" == "all" ] || [ "$mode" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                 callbacks[$idx]=${item["callback"]}
                 arguments[$idx]="${item["name"]} ${item["checked"]}"
@@ -590,7 +614,6 @@ MENU.Show() {
     done
 
     printf "\n"
-    #echo "------------------------------------------------------------------------"
 
     # Last, call all the callbacks that needs to be called
     for i in "${!callbacks[@]}"; do
@@ -603,12 +626,12 @@ MENU.Show() {
 # -------------------------------------------------------------------
 # Displays all the menus created
 #
-# All the optional [BOOLEAN] arguments are 'false' by default:
+# All the optional arguments are 'false' by default:
 #
-# [IN][OPT] order - true to display in the order of creation
-# [IN][OPT] flag1 - whether to call the main manu's callback
-# [IN][OPT] flag2 - whether to call the selected item's callback
-# [IN][OPT] mode  -
+# [IN][OPT] order - {true/false} whether to display all the menus in the order of its creation
+# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
+# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
+# [IN][OPT] mode  - call-mode of all the check button item's callbacks
 #
 # Remark: By default, the displaying order of the menus corresponds
 #         to the order of how the keys of the bash assosiative array
@@ -638,7 +661,7 @@ MENU._separator() {
     echo "------------------------------------------------------------------------"
 }
 
-# arguments are comming from the menu's alias: $* f1 f2 mode
+# arguments are comming from the main menu's alias: $* f1 f2 mode
 MENU._show() {
     MENU._log_info "args: $*"
 
@@ -684,9 +707,6 @@ MENU._debug_print() {
 
 
     # ********************   TODO LIST   ********************
-    # TODO: make MainMenu work w/o callback: MENU.Null
-    # TODO: make partial aliases
-    # TODO: check box all check/un-check/flip
     # TODO: dynamic separator length
     # TODO: lower case alias
     # TODO: make work w/o alias
@@ -716,17 +736,17 @@ MENU.Demo() {
     # -----------------------------------------------------------------------------------------------------------------
     # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
     #
-    # 1 [OPT]  flag1           - whether to call the menu's callback
-    # 2 [OPT]   |    flag2     - whether to call the radio box item's callback
-    # 3 [OPT]   |     |   mode - call-mode of the check box callbacks [no (false), all (true), checked, unchecked]
+    # 1 [OPT]  flag1           - whether to call the main menu's callback
+    # 2 [OPT]   |    flag2     - whether to call the selected radio button item's callback
+    # 3 [OPT]   |     |   mode - call-mode of all the check button item's callbacks, for modes see documentation for .Show
     # > PL    false false all
     #
     # 'PL' alias usage examples:
     # > PL                 - displays the menu
     # > PL true            - displays the menu + calls the menu's callback
-    # > PL false true      - displays the menu + calls the selected radio box item's callback
+    # > PL false true      - displays the menu + calls the selected radio button item's callback
     # > PL true true       - displays the menu + calls both the selected item and the main menu's callbacks
-    # > PL false false all - displays the menu + calls all the radio box item's callbacks
+    # > PL false false all - displays the menu + calls all the radio button item's callbacks
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -736,21 +756,21 @@ MENU.Demo() {
     # 2 [OPT]       |    divider                                 - devider to be used w/ .AddDivider ('|' by default)
     # 3 [OPT]       |      |    alignment                        - alignent of the item names (none by default)
     # 4 [OPT]       |      |       |        color                - the color of hightlighted items (green by default)
-    # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio box when selected
-    # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check box when checked
+    # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio button when selected
+    # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default by-largest ${red} '○' default
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Add a radio-box item into the menu
+    # Add a radio-button item into the menu
     #
     # 1               handle                    - a name/handle of the menu to be used w/ the API
     # 2                 |    name               - an item's name to be added into the menu
     # 3 [OPT]           |     |    alias        - an alias to be created that triggers the item's callback
     # 4 [OPT]           |     |     |  callback - a function to be called when an item is selected
-    MENU.AddRadioBox pl_menu Linux nux MENU.DemoPlLinuxCb
-    #MENU.AddRadioBox pl_menu Linux $null MENU.DemoPlLinuxCb
-    #MENU.AddRadioBox pl_menu Linux
+    MENU.AddRadioButton pl_menu Linux nux MENU.DemoPlLinuxCb
+    #MENU.AddRadioButton pl_menu Linux $null MENU.DemoPlLinuxCb
+    #MENU.AddRadioButton pl_menu Linux
     #
     # In the invocation example #2, there is no alias for item 'Linux', so the only way to call it is by using
     # the .Select command, like so: MENU.Select pl_menu Linux true false true
@@ -760,20 +780,20 @@ MENU.Demo() {
     # Under the hood 'nux' is just an alias for: 'MENU.Select pl_menu Linux true false true'
     #
     # 1 [OPT]  flag1     - whether to call the main menu's callback
-    # 2 [OPT]   |   mode - call-mode of the check box callbacks [no (false), all (true), checked, unchecked]
+    # 2 [OPT]   |   mode - call-mode of the check button callbacks [no (false), all (true), checked, unchecked]
     # > nux    true no
     #
     # 'nux' alias usage examples:
     # > nux          - selects 'Linux' item, displays the 'PLATFORM' menu and triggers the 'Linux' item's callback
     # > nux true     - all the above + triggers the 'PLATFORM' menu's callback
-    # > nux true all - all the above + triggers all the check box item's callbacks (if any)
+    # > nux true all - all the above + triggers all the check button item's callbacks (if any)
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.AddRadioBox pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
+    MENU.AddRadioButton pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
     MENU.AddDivider pl_menu
     MENU.AddLabel pl_menu QEMU:
-    MENU.AddRadioBox pl_menu v8 v8 MENU.DemoPlQemuCb
-    MENU.AddRadioBox pl_menu arm32 arm MENU.DemoPlQemuCb
+    MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
+    MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
 
     # -----------------------------------------------------------------------------------------------------------------
     # Select an item of the menu
@@ -792,19 +812,20 @@ MENU.Demo() {
     #
     #         handle                - a name/handle of the menu to be used w/ the API
     #           |   flag1           - whether to call the main menu's callback
-    #           |     |  flag2      - whether to call the selected radio box item's callback
-    #           |     |    |  mode  - call mode of the check box callbacks [no (false), all (true), checked, unchecked]
+    #           |     |  flag2      - whether to call the selected radio button item's callback
+    #           |     |    |  mode  - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
     MENU.Show pl_menu true true all
     #
-    # no (false)    - do not call any callback for any check box itmes
-    # all (true)    - call all the callbacks for all check box items regardless of the state
-    # current       - call the callback of the check box item that changes the state (.Select only)
-    # checked       - call all the callbacks for all checked check box items
-    # unchecked     - call all the callbacks for all un-checked check box items
+    # mode:
+    #  no (false)   - do not call any callback for any check button itmes
+    #  all (true)   - call all the callbacks for all check button items regardless of the state
+    #  current      - call the callback of the check button item that changes the state (.Select only)
+    #  checked      - call all the callbacks for all checked check button items
+    #  unchecked    - call all the callbacks for all un-checked check button items
     #
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.Create build_menu Build $null MENU.DemoMainMenu
+    MENU.Create build_menu Build Build MENU.DemoMainMenu
     #
     # if there is no alias for the menu you can call it through
     # MENU API directly or create your own alias
@@ -814,14 +835,14 @@ MENU.Demo() {
     # > alias b='MENU._separator; MENU.Show build_menu; MENU._separator'
     #
 
-    MENU.AddRadioBox build_menu Debug dbg MENU.DemoBuildChange
-    MENU.AddRadioBox build_menu Release rls MENU.DemoBuildChange
+    MENU.AddRadioButton build_menu Debug dbg MENU.DemoBuildChange
+    MENU.AddRadioButton build_menu Release rls MENU.DemoBuildChange
     MENU.AddDivider build_menu
-    MENU.AddCheckBox build_menu Pedantic Pedant MENU.DemoBuildGccFlags
-    MENU.AddCheckBox build_menu Wall all MENU.DemoBuildGccFlags
-    MENU.AddCheckBox build_menu Werror err MENU.DemoBuildGccFlags
-    MENU.AddCheckBox build_menu fPIC PIC MENU.DemoBuildGccFlags
-    MENU.AddCheckBox build_menu isoC99 iso MENU.DemoBuildGccFlags
+    MENU.AddCheckButton build_menu Pedantic Pedant MENU.DemoBuildGccFlags
+    MENU.AddCheckButton build_menu Wall all MENU.DemoBuildGccFlags
+    MENU.AddCheckButton build_menu Werror err MENU.DemoBuildGccFlags
+    MENU.AddCheckButton build_menu fPIC PIC MENU.DemoBuildGccFlags
+    MENU.AddCheckButton build_menu isoC99 iso MENU.DemoBuildGccFlags
     MENU.Select build_menu Debug false
     MENU.Select build_menu Wall false
     MENU.Select build_menu Werror false
@@ -830,17 +851,17 @@ MENU.Demo() {
     MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by-largest
 
-    MENU.AddRadioBox logs_menu FATAL $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu FATAL $null MENU.DemoLogsCb
     # alias fatal='MENU._separator; MENU.Select logs_menu FATAL true false true; MENU._separator'
 
-    MENU.AddRadioBox logs_menu SEVERE $null MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu WARNING $null MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu INFO $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu SEVERE $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu INFO $null MENU.DemoLogsCb
     MENU.AddLnBreak logs_menu
-    MENU.AddRadioBox logs_menu FINE $null MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu FINER $null MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu FINEST $null MENU.DemoLogsCb
-    MENU.AddRadioBox logs_menu OFF $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu FINE $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu FINER $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
     MENU.Select logs_menu INFO false
     MENU.Show logs_menu true true
 
