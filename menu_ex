@@ -237,6 +237,9 @@ MENU.SetStyle() {
     [[ $# -gt 4 && "$5" != "default" ]] && context["radio-symbol"]=$5
     [[ $# -gt 5 && "$6" != "default" ]] && context["check-symbol"]=$6
 
+    # In case of a complex alignment the menu's width needs to be calculated when shown
+    [[ "${context["align"]}" == "by-largest" ]] && context["menu-width"]=0
+
     MENUMAP[$1]=$(declare -p context)
 }
 
@@ -273,22 +276,31 @@ MENU._add_item() {
 
     items[${#items[@]}]=$(declare -p item)
     context["items"]=$(declare -p items)
+
+    # Used for 'by-largest' alignment since we need to know what item's length is the longest one
     [[ ${context["item-len-max"]} -lt ${#item["name"]} ]] && context["item-len-max"]=${#item["name"]}
 
-    local item_width=${#item["name"]}
-    case ${item['type']} in
-        check-button | radio-button)
-            ((item_width+=5)) # ' ' + '[ ]' + ' '
-            ;;
-        divider)
-            ((item_width+=1)) # ' '
-            ;;
-        label)
-            ((item_width+=2)) # ': '
-            ;;
-    esac
+    # Calculate the width of the menu only if it's a simple alignment mode;
+    # because in case of 'by-largest' alignment we cannot accuratelly calculate
+    # the width until all the items have been added into the menu
+    if [ "${context["align"]}" != "by-largest" ]; then
+        local item_width=${#item["name"]}
+        ((item_width+=1)) # ' ' after an item's name
+        case ${item['type']} in
+            check-button | radio-button)
+                ((item_width+=4)) # '[ ] '
+                ;;
+            divider)
+                ((item_width+=1)) # ' '
+                ;;
+        esac
+        ((context["menu-width"]+=$item_width))
+    else
+        # Will trigger to re-calculate again the menu's width in case an item is added
+        # after the 'menu-width' was calculated the first time
+        context["menu-width"]=0
+    fi
 
-    ((context["menu-width"]+=$item_width))
     MENUMAP[$2]=$(declare -p context)
 
     [[ "${item['type']}" != "radio-button" && "${item['type']}" != "check-button" ]] && return
@@ -678,29 +690,92 @@ MENU.ShowAll() {
     [[ $# -gt 2 ]] && f2=$3 || f2='false'
     [[ $# -gt 3 ]] && mode=$4 || mode='false'
 
+    local last_menu=''
     if [ "$order" == "true" ]; then
         for i in "${!MENUORDER[@]}"; do
-            MENU._separator
-            MENU.Show ${MENUORDER[$i]} $f1 $f2 $mode
+            last_menu=${MENUORDER[$i]}
+            MENU._separator $last_menu
+            MENU.Show $last_menu $f1 $f2 $mode
         done
     else
         for menu in "${!MENUMAP[@]}"; do
-            MENU._separator
+            last_menu=$menu
+            MENU._separator $menu
             MENU.Show $menu $f1 $f2 $mode
         done
     fi
-    MENU._separator
+    MENU._separator $last_menu
+}
+
+# -----------------------------------------------------------------------------
+# It's quite tricky to calculate accuratelly the menu's length because of such
+# factors as ln-break and alignment
+#
+# [IN]  - menu name
+# [OUT] - the length of the menu
+#
+# -----------------------------------------------------------------------------
+MENU._calculate_menu_width() {
+    if [ $# -lt 1 ]; then
+        MENU._error "MENU._calculate_menu_width requires more arguments"
+        return
+    fi
+
+    eval "${MENUMAP["$1"]}"
+    eval "${context["items"]}"
+
+    local max=0
+    local length=0
+    for i in "${!items[@]}"; do
+        eval "${items["$i"]}"
+
+        local name=$(MENU._string_pad ${item["name"]} ${context["item-len-max"]})
+        case ${item['type']} in
+            check-button | radio-button)
+                ((length+=4)) # '[ ] ' or '( ) '
+                ;;
+            divider)
+                ((length+=1)) # ' '
+                ;;
+            ln-break)
+                [ $length -gt $max ] && max=$length
+                continue
+                ;;
+        esac
+
+        ((length+=${#name}))
+        ((length+=1)) # ' ' after each item's name
+    done
+
+    [ $max -gt 0 ] && local width=$max || local width=$length
+
+    ((width+=${#context["name"]}))
+    ((width+=4)) # ' * :'
+
+    echo $width
 }
 
 MENU._separator() {
-    if [ $# -gt 0 ]; then
-        eval "${MENUMAP["$1"]}"
-        ss="printf -- '-%.0s' {1..${context["menu-width"]}}"
-        eval $ss
-        echo ""
-    else
-        echo "------------------------------------------------------------------------"
+    if [ $# -lt 1 ]; then
+        MENU._error "MENU._separator requires more arguments"
+        return
     fi
+
+    eval "${MENUMAP["$1"]}"
+    local width=${context["menu-width"]}
+
+    if [[ $width -lt 1 ]]; then
+        width=$(MENU._calculate_menu_width $1)
+
+        MENU._log_warning "re-calc the width: $width"
+
+        context["menu-width"]=$width
+        MENUMAP[$1]=$(declare -p context)
+    fi
+
+    cmd="printf -- '-%.0s' {1..$width}"
+    eval $cmd
+    echo ""
 }
 
 # arguments are comming from the main menu's alias: $* f1 f2 mode
@@ -714,8 +789,7 @@ MENU._show() {
     MENU._separator $1
 }
 
-#                 1      2    3     4    5    6
-# MENU.Select: pl_menu Linux true false true false
+# arguments are comming from the item's alias: $*
 MENU._select() {
     [[ $# -gt 3 ]] && f1=$4 || f1='false'
     [[ $# -gt 4 ]] && f2=$5 || f2='false'
@@ -724,35 +798,39 @@ MENU._select() {
     MENU.Select $1 $2
 
     if [ $# -gt 2 ] && [ "$3" == "true" ]; then
-        MENU._separator
+        MENU._separator $1
         MENU.Show $1 $f1 $f2 $mode
-        MENU._separator
+        MENU._separator $1
     fi
 }
 
 MENU._debug_print() {
-    [[ "$MENUBUILD" == "Release" ]] && return
-    for menu_key in "${!MENUMAP[@]}"; do
-        echo '----------------------------------------------------------------------------------------'
-        eval "${MENUMAP["$menu_key"]}" # unpack: context variable
-        echo "* $menu_key:"
-        for ctx_key in "${!context[@]}"; do
-            if [ "$ctx_key" == "items" ]; then
-                echo "  - [$ctx_key]:"
-                eval "${context["$ctx_key"]}" # unpack: items variable
-                for items_key in "${!items[@]}"; do
-                    echo "    + [$items_key]: ${items["$items_key"]}"
-                    eval "${items["$items_key"]}" # unpack: item variable
-                    for indx in "${!item[@]}"; do
-                        printf "      ♦ [$indx]: ${item["$indx"]}\n"
-                    done
+    #echo '----------------------------------------------------------------------------------------'
+    eval "${MENUMAP["$1"]}" # unpack: context variable
+    echo "* $1:"
+    for ctx_key in "${!context[@]}"; do
+        if [ "$ctx_key" == "items" ]; then
+            echo "  - [$ctx_key]:"
+            eval "${context["$ctx_key"]}" # unpack: items variable
+            for items_key in "${!items[@]}"; do
+                echo "    + [$items_key]: ${items["$items_key"]}"
+                eval "${items["$items_key"]}" # unpack: item variable
+                for indx in "${!item[@]}"; do
+                    printf "      ♦ [$indx]: ${item["$indx"]}\n"
                 done
-            else
-                printf "  - [$ctx_key]: ${context["$ctx_key"]}${reset}\n"
-            fi
-        done
+            done
+        else
+            printf "  - [$ctx_key]: ${context["$ctx_key"]}${reset}\n"
+        fi
     done
-    echo '----------------------------------------------------------------------------------------'
+}
+
+MENU._debug_print_all() {
+    [[ "$MENUBUILD" == "Release" ]] && return
+    for key in "${!MENUMAP[@]}"; do
+        MENU._debug_print $key
+    done
+    #echo '----------------------------------------------------------------------------------------'
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -818,7 +896,7 @@ MENU.Demo() {
     # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio button when selected
     # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default by-largest ${red} '○' default
-    #MENU.SetStyle pl_menu default by-largest
+    MENU.SetStyle pl_menu default by-largest
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -850,9 +928,9 @@ MENU.Demo() {
     # -----------------------------------------------------------------------------------------------------------------
 
     MENU.AddRadioButton pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
-    MENU.AddDivider pl_menu
+    #MENU.AddDivider pl_menu
     #MENU.AddLnBreak pl_menu
-    MENU.AddLabel pl_menu QEMU:
+    #MENU.AddLabel pl_menu QEMU:
     MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
     MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
 
@@ -893,7 +971,6 @@ MENU.Demo() {
     #
     # > MENU.Show build_menu
     # > alias b='MENU.Show build_menu'
-    # > alias b='MENU._separator; MENU.Show build_menu; MENU._separator'
     #
 
     MENU.AddRadioButton build_menu Debug dbg MENU.DemoBuildChange
@@ -907,13 +984,12 @@ MENU.Demo() {
     MENU.Select build_menu Debug false
     MENU.Select build_menu Wall false
     MENU.Select build_menu Werror false
-    #MENU.Show build_menu true true all
+    MENU.Show build_menu true true all
 
     MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by-largest
 
     MENU.AddRadioButton logs_menu FATAL $null MENU.DemoLogsCb
-    # alias fatal='MENU._separator; MENU.Select logs_menu FATAL true false true; MENU._separator'
 
     MENU.AddRadioButton logs_menu SEVERE $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
@@ -924,10 +1000,10 @@ MENU.Demo() {
     MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
     MENU.Select logs_menu INFO false
-    #MENU.Show logs_menu true true
+    MENU.Show logs_menu true true
 
 
-    #MENU._debug_print
+    #MENU._debug_print_all
 }
 
 # -------------------------------------------------------------------
