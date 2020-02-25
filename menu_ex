@@ -12,13 +12,14 @@
 # -----------------------------------------------------------------------------
 
 # Global Map that holds all the menus created
-unset MENUMAP
-declare -A MENUMAP=()
-declare -g largest=0
+unset MENUEX
+declare -A MENUEX=()
+MENUEX["map"]="declare -A map=()"
+MENUEX["order"]="declare -a order=()"
+MENUEX["width"]=0
+MENUEX["build"]='Debug'
 
 # Tracks the order of menus created
-unset MENUORDER
-declare -a MENUORDER=()
 
 # Change to 'Debug' if logs are needed
 unset MENUBUILD
@@ -146,6 +147,11 @@ MENU._warning() {
 # Remark: The 'alias' parameter creates the alias for the menu unless the alias
 #         already exists in the environment
 #
+# When 'callback' function is called it has 2 arguments passed in:
+#
+# [IN] handle - the menu's name/handle
+# [IN] name   - the menu's name (if specified)
+#
 # -----------------------------------------------------------------------------
 MENU.Create() {
     if [[ $# -lt 1 ]]; then
@@ -177,8 +183,13 @@ MENU.Create() {
     local -a items=()
     context["items"]=$(declare -p items)
 
-    MENUMAP[$1]=$(declare -p context)
-    MENUORDER[${#MENUORDER[@]}]=$1
+    eval "${MENUEX["map"]}"
+    map[$1]=$(declare -p context)
+    MENUEX["map"]=$(declare -p map)
+
+    eval "${MENUEX["order"]}"
+    order[${#order[@]}]=$1
+    MENUEX["order"]=$(declare -p order)
 
     local default="MENU.SetStyle $1"
     ${default}
@@ -222,7 +233,8 @@ MENU.SetStyle() {
       return
     fi
 
-    eval "${MENUMAP["$1"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
 
     # By default
     context["divider"]='|'
@@ -241,7 +253,8 @@ MENU.SetStyle() {
     # In case of a complex alignment the menu's width needs to be calculated when shown
     [[ "${context["align"]}" == "by-largest" ]] && context["menu-width"]=0
 
-    MENUMAP[$1]=$(declare -p context)
+    map[$1]=$(declare -p context)
+    MENUEX["map"]=$(declare -p map)
 }
 
 # -----------------------------------------------------------------------------
@@ -272,7 +285,8 @@ MENU._add_item() {
     [ $# -gt 3 ] && item["alias"]=$4
     [ $# -gt 4 ] && item["callback"]=$5
 
-    eval "${MENUMAP["$2"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$2"]}"
     eval "${context["items"]}"
 
     items[${#items[@]}]=$(declare -p item)
@@ -302,9 +316,10 @@ MENU._add_item() {
         context["menu-width"]=0
     fi
 
-    [[ ${context["menu-width"]} -gt $largest ]] && largest=${context["menu-width"]}
+    [[ ${context["menu-width"]} -gt ${MENUEX["width"]} ]] && MENUEX["width"]=${context["menu-width"]}
 
-    MENUMAP[$2]=$(declare -p context)
+    map[$2]=$(declare -p context)
+    MENUEX["map"]=$(declare -p map)
 
     [[ "${item['type']}" != "radio-button" && "${item['type']}" != "check-button" ]] && return
 
@@ -315,7 +330,7 @@ MENU._add_item() {
             [[ "$MENUBUILD" == "Release" ]] && return
         fi
 
-        # See Select command for the flags:                      X    1    2    mode
+        # See Select command for the flags:                       show   1    2   mode
         [[ "${item['type']}" == "radio-button" ]] && local flags="true false true false" || local flags="true false false current"
         alias "${item['alias']}"="MENU._select $2 \"${item["name"]}\" $flags"
     fi
@@ -337,6 +352,12 @@ MENU._add_item() {
 # Remark: When the item's 'callback' is called there are 2 arguments passed
 #         into the callbak: [IN] name - the menu name and [IN] item - the
 #         selected item name;
+#
+# Remark: When 'callback' function is called it has 3 arguments passed in:
+#
+# [IN]      handle - the menu's name/handle
+# [IN]      name   - the name of the selected item
+# [IN][OPT] state  - {on, off} item's state (check-button type only)
 #
 # Example:
 #
@@ -406,7 +427,8 @@ MENU.Select() {
         return
     fi
 
-    eval "${MENUMAP["$1"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
 
     [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
 
@@ -432,7 +454,8 @@ MENU.Select() {
     # Set selected if the itme's type is the radio-button
     [[ ! "$check_button_set" ]] && context["selected"]=$2
 
-    MENUMAP[$1]=$(declare -p context)
+    map[$1]=$(declare -p context)
+    MENUEX["map"]=$(declare -p map)
 
     MENU._log_info "ARGS: $*"
 
@@ -502,7 +525,8 @@ MENU.CheckButtonForAll() {
 
     MENU._log_info "ARGS: $*"
 
-    eval "${MENUMAP["$1"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
     eval "${context["items"]}"
 
     local changed='false'
@@ -527,7 +551,10 @@ MENU.CheckButtonForAll() {
         [ "$updated" == 'true' ] && items["$i"]=$(declare -p item); context["items"]=$(declare -p items); changed='true'
     done
 
-    [ "$changed" == 'true' ] && MENUMAP[$1]=$(declare -p context)
+    if [[ "$changed" == 'true' ]]; then
+        map[$1]=$(declare -p context)
+        MENUEX["map"]=$(declare -p map)
+    fi
 
     [[ $# -gt 2 ]] && show=$3 || show='false'
     [[ $# -gt 3 ]] && flag1=$4 || flag1='false'
@@ -572,13 +599,13 @@ MENU.Show() {
 
     MENU._log_info "ARGS: $*"
 
-    eval "${MENUMAP["$1"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
+    eval "${context["items"]}"
 
     if [ "${context["name"]}" != "MENU.Null" ]; then
         printf " * ${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}: "
     fi
-
-    eval "${context["items"]}"
 
     local idx=0
     local -a callbacks=()
@@ -587,7 +614,7 @@ MENU.Show() {
     # Store the main menu's callback to be called later
     if [ "$2" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
         callbacks[$idx]=${context["callback"]}
-        arguments[$idx]=${context["name"]}
+        arguments[$idx]="$1 ${context["name"]}"
         idx=$(($idx + 1))
     fi
 
@@ -632,7 +659,7 @@ MENU.Show() {
                 # Store the radio button item's callback to be called later
                 if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
-                    arguments[$idx]=${item["name"]}
+                    arguments[$idx]="$1 ${item["name"]}"
                     idx=$(($idx + 1))
                 fi
             else
@@ -648,34 +675,36 @@ MENU.Show() {
                 printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
                 if [ "$mode" == "checked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
-                    arguments[$idx]="${item["name"]} ${item["checked"]}"
+                    arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
                 fi
             else
                 printf "[ ] ${name/$alias/${smul}$alias${reset}} "
                 if [ "$mode" == "unchecked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
-                    arguments[$idx]="${item["name"]} ${item["checked"]}"
+                    arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
                 fi
             fi
 
             if [ "${context["checked"]}" == "${item["name"]}" ] && [ "$mode" == 'current' ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                 callbacks[$idx]=${item["callback"]}
-                arguments[$idx]="${item["name"]} ${item["checked"]}"
+                arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
                 idx=$(($idx + 1))
 
                 MENU._log_warning "mode: $mode context[checked]: ${context["checked"]}"
                 MENU._log_warning "${item["callback"]} ${item["name"]} ${item["checked"]}"
 
                 context["checked"]=''
-                MENUMAP[$1]=$(declare -p context)
+
+                map[$1]=$(declare -p context)
+                MENUEX["map"]=$(declare -p map)
             fi
 
             # Store all the check button item's callbacks to be called later
             if [ "$mode" == "all" ] || [ "$mode" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                 callbacks[$idx]=${item["callback"]}
-                arguments[$idx]="${item["name"]} ${item["checked"]}"
+                arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
                 idx=$(($idx + 1))
             fi
 
@@ -716,13 +745,16 @@ MENU.ShowAll() {
 
     local last_menu=''
     if [ "$order" == "true" ]; then
-        for i in "${!MENUORDER[@]}"; do
-            last_menu=${MENUORDER[$i]}
+        eval "${MENUEX["order"]}"
+        for i in "${!order[@]}"; do
+            last_menu=${order[$i]}
             MENU._separator $last_menu true
             MENU.Show $last_menu $f1 $f2 $mode
         done
     else
-        for menu in "${!MENUMAP[@]}"; do
+        eval "${MENUEX["map"]}"
+        for menu in "${!map[@]}"; do
+            eval "${map["$menu"]}"
             last_menu=$menu
             MENU._separator $menu true
             MENU.Show $menu $f1 $f2 $mode
@@ -735,8 +767,8 @@ MENU.ShowAll() {
 # It's quite tricky to calculate accuratelly the menu's length because of such
 # factors as ln-break and alignment
 #
-# [IN]  - menu name
-# [OUT] - the length of the menu
+# [IN]  name   - the menu's handle
+# [OUT] length - the length of the menu
 #
 # -----------------------------------------------------------------------------
 MENU._calculate_menu_width() {
@@ -745,7 +777,8 @@ MENU._calculate_menu_width() {
         return
     fi
 
-    eval "${MENUMAP["$1"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
     eval "${context["items"]}"
 
     local max=0
@@ -776,15 +809,13 @@ MENU._calculate_menu_width() {
     ((width+=${#context["name"]}))
     ((width+=4)) # ' * :'
 
-    [[ $width -gt $largest ]] && largest=$width
-
     echo $width
 }
 
 # -----------------------------------------------------------------------------
 # Prints out the menus' separator
 #
-# [IN]      menu    - menu's handle
+# [IN]      menu    - the menu's handle
 # [IN][OPT] largest - {true/false} whether to use the largest length
 #                     of all the menus
 #
@@ -795,19 +826,24 @@ MENU._separator() {
         return
     fi
 
-    eval "${MENUMAP["$1"]}"
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
+
     local width=${context["menu-width"]}
 
     if [[ $width -lt 1 ]]; then
         width=$(MENU._calculate_menu_width $1)
+        [[ $width -gt ${MENUEX["width"]} ]] && MENUEX["width"]=$width
 
         MENU._log_warning "re-calc the width: $width"
 
         context["menu-width"]=$width
-        MENUMAP[$1]=$(declare -p context)
+
+        map[$1]=$(declare -p context)
+        MENUEX["map"]=$(declare -p map)
     fi
 
-    [[ $# -gt 1 && "$2" == "true" ]] && width=$largest
+    [[ $# -gt 1 && "$2" == "true" ]] && width=${MENUEX["width"]}
 
     cmd="printf -- '-%.0s' {1..$width}"
     eval $cmd
@@ -826,7 +862,7 @@ MENU._show() {
 }
 
 MENU._debug_print() {
-    eval "${MENUMAP["$1"]}" # unpack: context variable
+    eval "${map["$1"]}"
     echo "* $1:"
     for ctx_key in "${!context[@]}"; do
         if [ "$ctx_key" == "items" ]; then
@@ -835,9 +871,10 @@ MENU._debug_print() {
             for items_key in "${!items[@]}"; do
                 echo "    + [$items_key]: ${items["$items_key"]}"
                 eval "${items["$items_key"]}" # unpack: item variable
-                for indx in "${!item[@]}"; do
-                    printf "      ♦ [$indx]: ${item["$indx"]}\n"
-                done
+                # to iterate through item[] array
+                #for indx in "${!item[@]}"; do
+                #    printf "      ♦ [$indx]: ${item["$indx"]}\n"
+                #done
             done
         else
             printf "  - [$ctx_key]: ${context["$ctx_key"]}${reset}\n"
@@ -847,7 +884,9 @@ MENU._debug_print() {
 
 MENU._debug_print_all() {
     [[ "$MENUBUILD" == "Release" ]] && return
-    for key in "${!MENUMAP[@]}"; do
+
+    eval "${MENUEX["map"]}"
+    for key in "${!map[@]}"; do
         MENU._debug_print $key
     done
 }
@@ -864,7 +903,6 @@ MENU._debug_print_all() {
 # TODO: separator char, '-' by default
 # TODO: radio-box open char '(', close char ')'
 # TODO: check-box open char '[', close char ']'
-# TODO: dynamic separator length
 # TODO: lower case alias ???
 # ********************   TODO LIST   ********************
 
@@ -884,10 +922,10 @@ MENU.Demo() {
     # 2 [OPT]       |     name               - a displayed name of the menu
     # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
     # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
-    MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
+    #MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
     #MENU.Create pl_menu $null PL MENU.DemoMainMenu
     #MENU.Create pl_menu $null $null MENU.DemoMainMenu
-    #MENU.Create pl_menu
+    MENU.Create pl_menu
 
     # -----------------------------------------------------------------------------------------------------------------
     # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
@@ -915,7 +953,6 @@ MENU.Demo() {
     # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio button when selected
     # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default by-largest ${red} '○' default
-    MENU.SetStyle pl_menu default by-largest
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -947,9 +984,9 @@ MENU.Demo() {
     # -----------------------------------------------------------------------------------------------------------------
 
     MENU.AddRadioButton pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
-    #MENU.AddDivider pl_menu
+    MENU.AddDivider pl_menu
     #MENU.AddLnBreak pl_menu
-    #MENU.AddLabel pl_menu QEMU:
+    MENU.AddLabel pl_menu QEMU:
     MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
     MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
 
@@ -973,6 +1010,7 @@ MENU.Demo() {
     #           |     |  flag2      - whether to call the selected radio button item's callback
     #           |     |    |  mode  - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
     MENU.Show pl_menu true true all
+
     #
     # mode:
     #  no (false)   - do not call any callback for any check button itmes
@@ -984,6 +1022,7 @@ MENU.Demo() {
     # -----------------------------------------------------------------------------------------------------------------
 
     MENU.Create build_menu Build Build MENU.DemoMainMenu
+
     #
     # if there is no alias for the menu you can call it through
     # MENU API directly or create your own alias
@@ -1021,108 +1060,117 @@ MENU.Demo() {
     MENU.Select logs_menu INFO false
     MENU.Show logs_menu true true
 
-
-    #MENU._debug_print_all
+    MENU._debug_print_all
 }
 
 # -----------------------------------------------------------------------------------------------------------------
-# Demo Menu's Callbacks
+# The Demo Menu's Callbacks
 # -----------------------------------------------------------------------------------------------------------------
 
+# [IN] handle - the menu's name/handle
+# [IN] name   - the menu's name (if specified)
 MENU.DemoMainMenu() {
     MENU._separator $1
-    echo " * $1: Main menu Callback..."
-    echo ' * ...'
+    echo " $2.Callback..."
+    echo ' ...'
 }
 
+# [IN]      handle - the menu's name/handle
+# [IN]      name   - the name of the selected item
+# [IN][OPT] state  - {on, off} item's state (check-button type only)
 MENU.DemoPlQemuCb() {
     MENU._separator $1
-    echo " * PL.$1: Callback..."
-    echo ' * ...'
+    echo " PL.Qemu.$2.Callback..."
+    echo ' ...'
 }
 
 MENU.DemoPlLinuxCb() {
+    if [[ "$2" != 'Linux' ]]; then
+        MENU._error "Wrong callback!"
+        return
+    fi
     MENU._separator $1
-    echo " * PL.$1: Callback..."
-    echo ' * ...'
+    echo " PL.Linux.Callback..."
+    echo ' ...'
 }
 
 MENU.DemoPlRpi3Cb() {
     MENU._separator $1
-    echo " * PL.$1: Callback..."
-    echo ' * ...'
+    echo " PL.$2.Callback..."
+    echo ' ...'
 }
 
 MENU.DemoBuildChange() {
-    echo " * Build.$1 Callback..."
+    MENU._separator $1
+    echo " Build.$2.Callback..."
 
-    case $1 in
+    case $2 in
         Debug)
             echo ' Setup Debug development environment...'
-            echo ' * ...'
+            echo ' ...'
             ;;
         Release)
             echo ' Setup Release development environment...'
-            echo ' * ...'
+            echo ' ...'
             ;;
     esac
 
 }
 
 MENU.DemoBuildGccFlags() {
-    echo " * PL.$1 Callback..."
-    echo " * state.[$2]"
+    echo ''
+    echo " PL.$2.state.[$3].Callback..."
 
-    case $1 in
+    case $2 in
         Pedantic)
-            echo ' * ...'
+            echo ' ...'
             ;;
         Wall)
-            echo ' * ...'
+            echo ' ...'
             ;;
         Werror)
-            echo ' * ...'
+            echo ' ...'
             ;;
         fPIC)
-            echo ' * ...'
+            echo ' ...'
             ;;
         isoC99)
-            echo ' * ...'
+            echo ' ...'
             ;;
     esac
 
 }
 
 MENU.DemoLogsCb() {
-    echo " * LOGS.$1 Callback..."
+    echo ''
+    echo " LOGS.$2.Callback..."
 
-    case $1 in
+    case $2 in
         FATAL)
-            echo ' * ...'
+            echo ' ...'
             ;;
         SEVERE)
-            echo ' * ...'
+            echo ' ...'
             ;;
         WARNING)
-            echo ' * ...'
+            echo ' ...'
             ;;
         INFO)
-            echo ' * ...'
+            echo ' ...'
             ;;
         FINE)
-            echo ' * ...'
+            echo ' ...'
             ;;
         FINER)
-            echo ' * ...'
+            echo ' ...'
             ;;
         FINEST)
-            echo ' * ...'
+            echo ' ...'
             ;;
         OFF)
-            echo ' * ...'
+            echo ' ...'
             ;;
     esac
-
 }
 
 # -----------------------------------------------------------------------------------------------------------------
