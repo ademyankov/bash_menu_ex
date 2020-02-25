@@ -439,11 +439,32 @@ MENU.Select() {
 
     # When called from an alias of an item there is an optional extra argument
     # true/false whether to call the main menu's callback in addition
-    [[ $# -gt 6 ]] && flag1=$7 || flag1='false'
+    [[ $# -gt 6 ]] && flag1=$7
 
     if [ "$flagX" == "true" ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
+    fi
+}
+
+# arguments are comming from the item's alias: $*
+MENU._select() {
+    MENU._log_info "ARGS: $*"
+
+    [[ $# -gt 3 ]] && f1=$4 || f1='false'
+    [[ $# -gt 4 ]] && f2=$5 || f2='false'
+    [[ $# -gt 5 ]] && mode=$6 || mode='false'
+
+    # an extra {true/false} might come from an alias argument
+    # to call the main menu's callback
+    [[ $# -gt 6 ]] && f1=$7
+
+    MENU.Select $1 $2
+
+    if [ $# -gt 2 ] && [ "$3" == "true" ]; then
+        MENU._separator $1
+        MENU.Show $1 $f1 $f2 $mode
+        MENU._separator $1
     fi
 }
 
@@ -789,21 +810,6 @@ MENU._show() {
     MENU._separator $1
 }
 
-# arguments are comming from the item's alias: $*
-MENU._select() {
-    [[ $# -gt 3 ]] && f1=$4 || f1='false'
-    [[ $# -gt 4 ]] && f2=$5 || f2='false'
-    [[ $# -gt 5 ]] && mode=$6 || mode='false'
-
-    MENU.Select $1 $2
-
-    if [ $# -gt 2 ] && [ "$3" == "true" ]; then
-        MENU._separator $1
-        MENU.Show $1 $f1 $f2 $mode
-        MENU._separator $1
-    fi
-}
-
 MENU._debug_print() {
     #echo '----------------------------------------------------------------------------------------'
     eval "${MENUMAP["$1"]}" # unpack: context variable
@@ -1006,32 +1012,32 @@ MENU.Demo() {
     #MENU._debug_print_all
 }
 
-# -------------------------------------------------------------------
-# Demo Callbacks
-#
+# -----------------------------------------------------------------------------------------------------------------
+# Demo Menu's Callbacks
+# -----------------------------------------------------------------------------------------------------------------
 
 MENU.DemoMainMenu() {
-    echo '------------------------------------------------------------------------'
+    MENU._separator $1
     echo " * $1: Main menu Callback..."
     echo ' * ...'
 }
 
 MENU.DemoPlQemuCb() {
+    MENU._separator $1
     echo " * PL.$1: Callback..."
     echo ' * ...'
-    echo '------------------------------------------------------------------------'
 }
 
 MENU.DemoPlLinuxCb() {
+    MENU._separator $1
     echo " * PL.$1: Callback..."
     echo ' * ...'
-    echo '------------------------------------------------------------------------'
 }
 
 MENU.DemoPlRpi3Cb() {
+    MENU._separator $1
     echo " * PL.$1: Callback..."
     echo ' * ...'
-    echo '------------------------------------------------------------------------'
 }
 
 MENU.DemoBuildChange() {
@@ -1048,7 +1054,6 @@ MENU.DemoBuildChange() {
             ;;
     esac
 
-    echo '------------------------------------------------------------------------'
 }
 
 MENU.DemoBuildGccFlags() {
@@ -1073,7 +1078,6 @@ MENU.DemoBuildGccFlags() {
             ;;
     esac
 
-    echo '------------------------------------------------------------------------'
 }
 
 MENU.DemoLogsCb() {
@@ -1106,9 +1110,8 @@ MENU.DemoLogsCb() {
             ;;
     esac
 
-    echo '------------------------------------------------------------------------'
 }
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------
 
 demo
