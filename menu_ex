@@ -14,6 +14,7 @@
 # Global Map that holds all the menus created
 unset MENUMAP
 declare -A MENUMAP=()
+declare -g largest=0
 
 # Tracks the order of menus created
 unset MENUORDER
@@ -300,6 +301,8 @@ MENU._add_item() {
         # after the 'menu-width' was calculated the first time
         context["menu-width"]=0
     fi
+
+    [[ ${context["menu-width"]} -gt $largest ]] && largest=${context["menu-width"]}
 
     MENUMAP[$2]=$(declare -p context)
 
@@ -715,17 +718,17 @@ MENU.ShowAll() {
     if [ "$order" == "true" ]; then
         for i in "${!MENUORDER[@]}"; do
             last_menu=${MENUORDER[$i]}
-            MENU._separator $last_menu
+            MENU._separator $last_menu true
             MENU.Show $last_menu $f1 $f2 $mode
         done
     else
         for menu in "${!MENUMAP[@]}"; do
             last_menu=$menu
-            MENU._separator $menu
+            MENU._separator $menu true
             MENU.Show $menu $f1 $f2 $mode
         done
     fi
-    MENU._separator $last_menu
+    MENU._separator $last_menu true
 }
 
 # -----------------------------------------------------------------------------
@@ -773,9 +776,19 @@ MENU._calculate_menu_width() {
     ((width+=${#context["name"]}))
     ((width+=4)) # ' * :'
 
+    [[ $width -gt $largest ]] && largest=$width
+
     echo $width
 }
 
+# -----------------------------------------------------------------------------
+# Prints out the menus' separator
+#
+# [IN]      menu    - menu's handle
+# [IN][OPT] largest - {true/false} whether to use the largest length
+#                     of all the menus
+#
+# -----------------------------------------------------------------------------
 MENU._separator() {
     if [ $# -lt 1 ]; then
         MENU._error "MENU._separator requires more arguments"
@@ -794,6 +807,8 @@ MENU._separator() {
         MENUMAP[$1]=$(declare -p context)
     fi
 
+    [[ $# -gt 1 && "$2" == "true" ]] && width=$largest
+
     cmd="printf -- '-%.0s' {1..$width}"
     eval $cmd
     echo ""
@@ -811,7 +826,6 @@ MENU._show() {
 }
 
 MENU._debug_print() {
-    #echo '----------------------------------------------------------------------------------------'
     eval "${MENUMAP["$1"]}" # unpack: context variable
     echo "* $1:"
     for ctx_key in "${!context[@]}"; do
@@ -836,7 +850,6 @@ MENU._debug_print_all() {
     for key in "${!MENUMAP[@]}"; do
         MENU._debug_print $key
     done
-    #echo '----------------------------------------------------------------------------------------'
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
