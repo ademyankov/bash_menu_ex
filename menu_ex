@@ -165,15 +165,15 @@ MENU.Create() {
     context["callback"]='MENU.Null'
     context["checked"]=''
     context["selected"]=''
-    context["item-len-max"]=0   # the max char length of an item's name
-    context["menu-width"]=0     # the length of the longest string in the menu (used for menu's separator)
+    context["item.length.max"]=0   # the max char length of an item's name
+    context["menu.width"]=0     # the length of the longest string in the menu (used for menu's separator)
 
     MENU._log_info "args: $*"
 
     context["name"]=$2
     if [ "$2" != "MENU.Null" ]; then
-        context["menu-width"]=${#2}
-        ((context["menu-width"] += 5 )) # ' * ' + <name> + ': '
+        context["menu.width"]=${#2}
+        ((context["menu.width"] += 5 )) # ' * ' + <name> + ': '
     fi
 
     [ $# -gt 2 ] && context["alias"]=$3
@@ -191,6 +191,9 @@ MENU.Create() {
     MENUEX["order"]=$(declare -p order)
 
     local default="MENU.SetStyle $1"
+    ${default}
+
+    default="MENU.SetStyleEx $1"
     ${default}
 
     # Create an alias to display the menu
@@ -211,12 +214,12 @@ MENU.Create() {
 # [IN][OPT] divider - a divider to be used w/ .AddDivider ('|' by default)
 #
 # [IN][OPT] align   - the menu's items alignment (none by default), supported:
-#             by-largest - aligns all the menu's items by the length of the
-#                          largest item's name
+#             by.largest.item - aligns all the menu's items by the length of the
+#                               largest item's name
 #
-# [IN][OPT] color   - the color of the selected item (green by default)
-# [IN][OPT] symbol1 - the symbol for the selected radio-button ('♦' by default)
-# [IN][OPT] symbol2 - the symbol for the cheched check-button ('x' by default)
+# [IN][OPT] color        - the color of the selected item (green by default)
+# [IN][OPT] radio.symbol - the symbol for the selected radio-button ('♦' by default)
+# [IN][OPT] radio.symbol - the symbol for the cheched check-button ('x' by default)
 #
 # Remark: 'default' can be passed as any [OPT] argument, which will set the
 #         default value for the corresponding style parameter
@@ -237,20 +240,69 @@ MENU.SetStyle() {
 
     # By default
     context["divider"]='|'
-    context["align"]=''
+    context["align"]='none'
     context["color"]=${green}
-    context["radio-symbol"]='♦'
-    context["check-symbol"]='x'
+    context["radio.symbol"]='♦'
+    context["check.symbol"]='x'
 
     # Optional arguments
     [[ $# -gt 1 && "$2" != "default" ]] && context["divider"]=$2
     [[ $# -gt 2 && "$3" != "default" ]] && context["align"]=$3
     [[ $# -gt 3 && "$4" != "default" ]] && context["color"]=$4
-    [[ $# -gt 4 && "$5" != "default" ]] && context["radio-symbol"]=$5
-    [[ $# -gt 5 && "$6" != "default" ]] && context["check-symbol"]=$6
+    [[ $# -gt 4 && "$5" != "default" ]] && context["radio.symbol"]=$5
+    [[ $# -gt 5 && "$6" != "default" ]] && context["check.symbol"]=$6
 
     # In case of a complex alignment the menu's width needs to be calculated when shown
-    [[ "${context["align"]}" == "by-largest" ]] && context["menu-width"]=0
+    [[ "${context["align"]}" == "by.largest.item" ]] && context["menu.width"]=0
+
+    map[$1]=$(declare -p context)
+    MENUEX["map"]=$(declare -p map)
+}
+
+# -----------------------------------------------------------------------------
+# Set the extra style of the menu (replace the default style)
+#
+# 1 [IN]      handle             - a name/handle of the menu to be used w/ the API
+# 2 [IN][OPT] separator.show     - xxx
+# 3 [IN][OPT] separator.symbol   -
+# 4 [IN][OPT] name.header        -
+# 5 [IN][OPT] name.footer        -
+# 6 [IN][OPT] radio.symbol.start -
+# 7 [IN][OPT] radio.symbol.end   -
+# 8 [IN][OPT] check.symbol.start -
+# 9 [IN][OPT] check.symbol.end   -
+#
+# Remark: 'default' can be used to specify the default argument
+#
+# -----------------------------------------------------------------------------
+MENU.SetStyleEx() {
+    if [[ $# -lt 1 ]]; then
+      MENU._error "MENU.SetStyle requires more arguments"
+      return
+    fi
+
+    eval "${MENUEX["map"]}"
+    eval "${map["$1"]}"
+
+    # By default
+    context["separator.show"]='true'
+    context["separator.symbol"]='-'
+    context["name.header"]=' * '
+    context["name.footer"]=':'
+    context["radio.symbol.start"]='('
+    context["radio.symbol.end"]=')'
+    context["check.symbol.start"]='['
+    context["check.symbol.end"]=']'
+
+    # Optional arguments
+    [[ $# -gt 1 && "$2" != "default" ]] && context["separator.show"]=$2
+    [[ $# -gt 2 && "$3" != "default" ]] && context["separator.symbol"]=$3
+    [[ $# -gt 3 && "$4" != "default" ]] && context["name.header"]=$4
+    [[ $# -gt 4 && "$5" != "default" ]] && context["name.footer"]=$5
+    [[ $# -gt 5 && "$6" != "default" ]] && context["radio.symbol.start"]=$6
+    [[ $# -gt 6 && "$7" != "default" ]] && context["radio.symbol.end"]=$7
+    [[ $# -gt 7 && "$8" != "default" ]] && context["check.symbol.start"]=$8
+    [[ $# -gt 8 && "$9" != "default" ]] && context["check.symbol.end"]=$9
 
     map[$1]=$(declare -p context)
     MENUEX["map"]=$(declare -p map)
@@ -292,23 +344,23 @@ MENU._add_item() {
     context["items"]=$(declare -p items)
 
     # Used for 'by-largest' alignment since we need to know what item's length is the longest one
-    [[ ${context["item-len-max"]} -lt ${#item["name"]} ]] && context["item-len-max"]=${#item["name"]}
+    [[ ${context["item.length.max"]} -lt ${#item["name"]} ]] && context["item.length.max"]=${#item["name"]}
 
     # Calculate the width of the menu only if it's a simple alignment mode;
     # because in case of 'by-largest' alignment we cannot accuratelly calculate
     # the width until all the items have been added into the menu
-    if [ "${context["align"]}" != "by-largest" ]; then
+    if [ "${context["align"]}" != "by.largest.item" ]; then
         local item_width=${#item["name"]}
         ((item_width+=1)) # ' ' after each item's name
         [[ "${item['type']}" == "check-button" || "${item['type']}" == "radio-button" ]] && ((item_width+=4)) # '[ ] '
-        ((context["menu-width"]+=$item_width))
+        ((context["menu.width"]+=$item_width))
     else
         # Will trigger to re-calculate again the menu's width in case an item is added
-        # after the 'menu-width' was calculated the first time
-        context["menu-width"]=0
+        # after the 'menu.width' was calculated the first time
+        context["menu.width"]=0
     fi
 
-    [[ ${context["menu-width"]} -gt ${MENUEX["width"]} ]] && MENUEX["width"]=${context["menu-width"]}
+    [[ ${context["menu.width"]} -gt ${MENUEX["width"]} ]] && MENUEX["width"]=${context["menu.width"]}
 
     map[$2]=$(declare -p context)
     MENUEX["map"]=$(declare -p map)
@@ -596,7 +648,7 @@ MENU.Show() {
     eval "${context["items"]}"
 
     if [ "${context["name"]}" != "MENU.Null" ]; then
-        printf " * ${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}: "
+        printf "${context["name.header"]}${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}${context["name.footer"]} "
     fi
 
     local idx=0
@@ -615,8 +667,8 @@ MENU.Show() {
 
         local name=${item["name"]}
 
-        if [ "${context["align"]}" == "by-largest" ]; then
-            name=$(MENU._string_pad ${item["name"]} ${context["item-len-max"]})
+        if [ "${context["align"]}" == "by.largest.item" ]; then
+            name=$(MENU._string_pad ${item["name"]} ${context["item.length.max"]})
         fi
 
         local type=${item["type"]}
@@ -646,7 +698,7 @@ MENU.Show() {
         if [ "$type" == "radio-button" ]; then
             if [ "${item["name"]}" == "$selected" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
-                printf "${color}${bold}(${context["radio-symbol"]}) ${name/$alias/$hi}${reset} "
+                printf "${color}${bold}(${context["radio.symbol"]}) ${name/$alias/$hi}${reset} "
 
                 # Store the radio button item's callback to be called later
                 if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
@@ -664,7 +716,7 @@ MENU.Show() {
             local mode=$4
             if [ "${item["checked"]}" == "on" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
-                printf "${color}${bold}[${context["check-symbol"]}] ${name/$alias/$hi}${reset} "
+                printf "${color}${bold}[${context["check.symbol"]}] ${name/$alias/$hi}${reset} "
                 if [ "$mode" == "checked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
@@ -778,7 +830,7 @@ MENU._calculate_menu_width() {
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        local name=$(MENU._string_pad ${item["name"]} ${context["item-len-max"]})
+        local name=$(MENU._string_pad ${item["name"]} ${context["item.length.max"]})
         case ${item['type']} in
             check-button | radio-button)
                 ((length+=4)) # '[ ] ' or '( ) '
@@ -823,7 +875,7 @@ MENU._separator() {
     eval "${MENUEX["map"]}"
     eval "${map["$1"]}"
 
-    local width=${context["menu-width"]}
+    local width=${context["menu.width"]}
 
     if [[ $width -lt 1 ]]; then
         width=$(MENU._calculate_menu_width $1)
@@ -831,7 +883,7 @@ MENU._separator() {
 
         MENU._log_warning "re-calc the width: $width"
 
-        context["menu-width"]=$width
+        context["menu.width"]=$width
 
         map[$1]=$(declare -p context)
         MENUEX["map"]=$(declare -p map)
@@ -839,7 +891,7 @@ MENU._separator() {
 
     [[ $# -gt 1 && "$2" == "true" ]] && width=${MENUEX["width"]}
 
-    cmd="printf -- '-%.0s' {1..$width}"
+    cmd="printf -- '${context["separator.symbol"]}%.0s' {1..$width}"
     eval $cmd
     echo ""
 }
@@ -893,7 +945,7 @@ MENU._debug_print_all() {
 
 
 # ********************   TODO LIST   ********************
-# TODO: print separator true/false, true - by default
+# TODO: SetStyleEx: print separator true/false, true - by default
 # TODO: separator char, '-' by default
 # TODO: radio-box open char '(', close char ')'
 # TODO: check-box open char '[', close char ']'
@@ -908,6 +960,10 @@ alias dev='MENU.ShowAll true'
 
 MENU.Demo() {
     null='MENU.Null'
+
+    #
+    # Demo menu 'PLATFORM'
+    #
 
     # -----------------------------------------------------------------------------------------------------------------
     # Create a menu
@@ -938,15 +994,37 @@ MENU.Demo() {
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Set the menu's style
+    # Set the menu's style (replace the default style)
     #
-    # 1           handle                                         - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]       |    divider                                 - devider to be used w/ .AddDivider ('|' by default)
-    # 3 [OPT]       |      |    alignment                        - alignent of the item names (none by default)
-    # 4 [OPT]       |      |       |        color                - the color of hightlighted items (green by default)
-    # 5 [OPT]       |      |       |          |    symbol1       - the select symbol for the radio button when selected
-    # 6 [OPT]       |      |       |          |      |   symbol2 - the check symbol for the check button when checked
-    #MENU.SetStyle pl_menu default by-largest ${red} '○' default
+    # 1           handle                                               - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]       |    divider                                       - devider to be used w/ .AddDivider ('|' by default)
+    # 3 [OPT]       |      |        alignment                          - alignent of the item names (none by default)
+    # 4 [OPT]       |      |           |          color                - the color of hightlighted items (green by default)
+    # 5 [OPT]       |      |           |            |    symbol1       - the select symbol for the radio button when selected
+    # 6 [OPT]       |      |           |            |      |   symbol2 - the check symbol for the check button when checked
+    #MENU.SetStyle pl_menu default by.largest.item ${red} '○' default
+    # -----------------------------------------------------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------------------------------------------------
+    # Set the extra style of the menu (replace the default style)
+    # 1            handle                                                - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]         |   separator.show                                 - xxx
+    # 3 [OPT]         |     |  symbol.sep                                - devider to be used w/ .AddDivider ('|' by default)
+    # 4 [OPT]         |     |    |  name.header                          - alignent of the item names (none by default)
+    # 5 [OPT]         |     |    |    |  name.footer                     - the color of hightlighted items (green by default)
+    # 6 [OPT]         |     |    |    |    | symbol.radio.start          - the select symbol for the radio button when selected
+    # 7 [OPT]         |     |    |    |    |   | symbol.radio.end        - the check symbol for the check button when checked
+    # 8 [OPT]         |     |    |    |    |   |   | symbol.chk.start    - the check symbol for the check button when checked
+    # 9 [OPT]         |     |    |    |    |   |   |   |  symbol.chk.end - the check symbol for the check button when checked
+    #MENU.SetStyleEx MENU1 true '-' " * " ":" '(' ')' '[' ']'
+    #
+    # For example you want to create a menu that looks like this:
+    #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #  => MENU - / / Item1 /*/ Item2 / / Item3 === | | chk1 |+| chk2
+    #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #
+    #MENU.SetStyleEx MENU1 true '~' "=>" " -" '/' '/' '|' '|'
+    #MENU.SetStyle MENU1 "===" default ${red} '*' '+'
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1019,12 +1097,14 @@ MENU.Demo() {
 
     #
     # if there is no alias for the menu you can call it through
-    # MENU API directly or create your own alias
+    # MENU API directly or create your own alias:
     #
     # > MENU.Show build_menu
-    # > alias b='MENU.Show build_menu'
     #
 
+    #
+    # Demo menu 'Build'
+    #
     MENU.AddRadioButton build_menu Debug dbg MENU.DemoBuildChange
     MENU.AddRadioButton build_menu Release rls MENU.DemoBuildChange
     MENU.AddDivider build_menu
@@ -1038,8 +1118,11 @@ MENU.Demo() {
     MENU.Select build_menu Werror false
     MENU.Show build_menu true true all
 
+    #
+    # Demo menu 'LOGS'
+    #
     MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
-    MENU.SetStyle logs_menu default by-largest
+    MENU.SetStyle logs_menu default by.largest.item
 
     MENU.AddRadioButton logs_menu FATAL $null MENU.DemoLogsCb
 
@@ -1168,3 +1251,8 @@ MENU.DemoLogsCb() {
 # -----------------------------------------------------------------------------------------------------------------
 
 demo
+
+#
+# run 'dev' alias to see all the demo menus
+# > dev
+#
