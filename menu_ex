@@ -170,11 +170,10 @@ MENU.Create() {
 
     MENU._log_info "args: $*"
 
-    # Optional arguments
-    if [ $# -gt 1 ]; then
-        context["name"]=$2
+    context["name"]=$2
+    if [ "$2" != "MENU.Null" ]; then
         context["menu-width"]=${#2}
-        ((context["menu-width"] += 4 )) # ' * ' + ':'
+        ((context["menu-width"] += 5 )) # ' * ' + <name> + ': '
     fi
 
     [ $# -gt 2 ] && context["alias"]=$3
@@ -300,15 +299,8 @@ MENU._add_item() {
     # the width until all the items have been added into the menu
     if [ "${context["align"]}" != "by-largest" ]; then
         local item_width=${#item["name"]}
-        ((item_width+=1)) # ' ' after an item's name
-        case ${item['type']} in
-            check-button | radio-button)
-                ((item_width+=4)) # '[ ] '
-                ;;
-            divider)
-                ((item_width+=1)) # ' '
-                ;;
-        esac
+        ((item_width+=1)) # ' ' after each item's name
+        [[ "${item['type']}" == "check-button" || "${item['type']}" == "radio-button" ]] && ((item_width+=4)) # '[ ] '
         ((context["menu-width"]+=$item_width))
     else
         # Will trigger to re-calculate again the menu's width in case an item is added
@@ -614,7 +606,7 @@ MENU.Show() {
     # Store the main menu's callback to be called later
     if [ "$2" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
         callbacks[$idx]=${context["callback"]}
-        arguments[$idx]="$1 ${context["name"]}"
+        [[ "${context["name"]}" != "MENU.Null" ]] && arguments[$idx]+="$1 ${context["name"]}" || arguments[$idx]="$1"
         idx=$(($idx + 1))
     fi
 
@@ -806,8 +798,10 @@ MENU._calculate_menu_width() {
 
     [ $max -gt 0 ] && local width=$max || local width=$length
 
-    ((width+=${#context["name"]}))
-    ((width+=4)) # ' * :'
+    if [[ "${context["name"]}" != "MENU.Null" ]]; then
+        ((width+=${#context["name"]}))
+        ((width+=4)) # ' * :'
+    fi
 
     echo $width
 }
@@ -922,10 +916,10 @@ MENU.Demo() {
     # 2 [OPT]       |     name               - a displayed name of the menu
     # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
     # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
-    #MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
+    MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
     #MENU.Create pl_menu $null PL MENU.DemoMainMenu
     #MENU.Create pl_menu $null $null MENU.DemoMainMenu
-    MENU.Create pl_menu
+    #MENU.Create pl_menu
 
     # -----------------------------------------------------------------------------------------------------------------
     # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
@@ -1106,11 +1100,9 @@ MENU.DemoBuildChange() {
 
     case $2 in
         Debug)
-            echo ' Setup Debug development environment...'
             echo ' ...'
             ;;
         Release)
-            echo ' Setup Release development environment...'
             echo ' ...'
             ;;
     esac
@@ -1118,7 +1110,7 @@ MENU.DemoBuildChange() {
 }
 
 MENU.DemoBuildGccFlags() {
-    echo ''
+    MENU._separator $1
     echo " PL.$2.state.[$3].Callback..."
 
     case $2 in
@@ -1142,7 +1134,7 @@ MENU.DemoBuildGccFlags() {
 }
 
 MENU.DemoLogsCb() {
-    echo ''
+    MENU._separator $1
     echo " LOGS.$2.Callback..."
 
     case $2 in
