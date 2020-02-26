@@ -19,12 +19,6 @@ declare -A MENUEX=()
 # A map that holds all the menus created
 MENUEX['map']='declare -A map=()'
 
-# Calculated width of the entire menu
-MENUEX['width']=0
-
-# Tracks the order of menus created
-MENUEX['order']='declare -a order=()'
-
 # Change to 'Debug' if logs required
 MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
@@ -135,10 +129,10 @@ MENU.Create() {
     context['name']='MENU.Null'
     context['alias']='MENU.Null'
     context['callback']='MENU.Null'
-    context['checked']=''
+    context['tmp.checked']=''       # temporally field used to specify check.button item checked at the context level
     context['selected']=''
-    context['item.length.max']=0   # the max char length of an item's name
-    context['menu.width']=0     # the length of the longest string in the menu (used for menu's separator)
+    context['item.length.max']=0    # the max char length of an item's name
+    context['menu.width']=0         # the length of the longest string in the menu (used for menu's separator)
     context['name']=$2
 
     MENU._log_info "args: $*"
@@ -208,6 +202,12 @@ MENU._ctor() {
         styles['rev']=`tput rev`    # Turn on reverse video mode
 
         MENUEX['styles']=$(declare -p styles)
+
+        # Calculated width of the entire menu
+        MENUEX['width']=0
+
+        # Tracks the order of menus created
+        MENUEX['order']='declare -a order=()'
     fi
 }
 
@@ -222,8 +222,8 @@ MENU._ctor() {
 #                               largest item's name
 #
 # [IN][OPT] color        - the color of the selected item (green by default)
-# [IN][OPT] radio.symbol - the symbol for the selected radio-button ('♦' by default)
-# [IN][OPT] radio.symbol - the symbol for the cheched check-button ('x' by default)
+# [IN][OPT] radio.symbol - the symbol for the selected radio.button ('♦' by default)
+# [IN][OPT] radio.symbol - the symbol for the cheched check.button ('x' by default)
 #
 # Remark: 'default' can be passed as any [OPT] argument, which will set the
 #         default value for the corresponding style parameter
@@ -245,19 +245,19 @@ MENU.SetStyle() {
     # By default
     context['divider']='|'
     context['align']='none'
-    context['color']='green'
-    context['radio.symbol']='♦'
-    context['check.symbol']='x'
+    context['select.color']='green'
+    context['radio.button.symbol']='♦'
+    context['check.button.symbol']='x'
 
     # Optional arguments
     [[ $# -gt 1 && "$2" != 'default' ]] && context['divider']=$2
     [[ $# -gt 2 && "$3" != 'default' ]] && context['align']=$3
-    [[ $# -gt 3 && "$4" != 'default' ]] && context['color']=$4
-    [[ $# -gt 4 && "$5" != 'default' ]] && context['radio.symbol']=$5
-    [[ $# -gt 5 && "$6" != 'default' ]] && context['check.symbol']=$6
+    [[ $# -gt 3 && "$4" != 'default' ]] && context['select.color']=$4
+    [[ $# -gt 4 && "$5" != 'default' ]] && context['radio.button.symbol']=$5
+    [[ $# -gt 5 && "$6" != 'default' ]] && context['check.button.symbol']=$6
 
     # In case of a complex alignment the menu's width needs to be calculated when shown
-    [[ "${context['align']}" == 'by.largest.item' ]] && context['menu.width']=0
+    #[[ "${context['align']}" == 'by.largest.item' ]] && context['menu.width']=0
 
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
@@ -271,11 +271,11 @@ MENU.SetStyle() {
 #                                  separator (true by default)
 # 3 [IN][OPT] separator.symbol   - separator symbol ('-' by default)
 # 4 [IN][OPT] name.header        - menu's name header (' * ' by default)
-# 5 [IN][OPT] name.footer        - menu's name footer (': ' by default)
-# 6 [IN][OPT] radio.symbol.start - radio.button opening symbol ('(' by default)
-# 7 [IN][OPT] radio.symbol.end   - radio.button closing symbol (')' by default)
-# 8 [IN][OPT] check.symbol.start - check.button opening symbol ('[' by default)
-# 9 [IN][OPT] check.symbol.end   - check.button closing symbol (']' by default)
+# 5 [IN][OPT] name.footer        - menu's name footer (':' by default)
+# 6 [IN][OPT] radio.button.bracket.start - radio.button opening symbol ('(' by default)
+# 7 [IN][OPT] radio.button.bracket.end   - radio.button closing symbol (')' by default)
+# 8 [IN][OPT] check.button.bracket.start - check.button opening symbol ('[' by default)
+# 9 [IN][OPT] check.button.bracket.end   - check.button closing symbol (']' by default)
 #
 # Remark: 'default' can be used to specify the default argument
 #
@@ -293,28 +293,29 @@ MENU.SetStyleEx() {
     context['separator.show']='true'
     context['separator.symbol']='-'
     context['name.header']=' * '
-    context['name.footer']=': '
-    context['radio.symbol.start']='('
-    context['radio.symbol.end']=')'
-    context['check.symbol.start']='['
-    context['check.symbol.end']=']'
+    context['name.footer']=':'
+    context['radio.button.bracket.start']='('
+    context['radio.button.bracket.end']=')'
+    context['check.button.bracket.start']='['
+    context['check.button.bracket.end']=']'
 
     # Optional arguments
     [[ $# -gt 1 && "$2" != 'default' ]] && context['separator.show']=$2
     [[ $# -gt 2 && "$3" != 'default' ]] && context['separator.symbol']=$3
     [[ $# -gt 3 && "$4" != 'default' ]] && context['name.header']=$4
     [[ $# -gt 4 && "$5" != 'default' ]] && context['name.footer']=$5
-    [[ $# -gt 5 && "$6" != 'default' ]] && context['radio.symbol.start']=$6
-    [[ $# -gt 6 && "$7" != 'default' ]] && context['radio.symbol.end']=$7
-    [[ $# -gt 7 && "$8" != 'default' ]] && context['check.symbol.start']=$8
-    [[ $# -gt 8 && "$9" != 'default' ]] && context['check.symbol.end']=$9
+    [[ $# -gt 5 && "$6" != 'default' ]] && context['radio.button.bracket.start']=$6
+    [[ $# -gt 6 && "$7" != 'default' ]] && context['radio.button.bracket.end']=$7
+    [[ $# -gt 7 && "$8" != 'default' ]] && context['check.button.bracket.start']=$8
+    [[ $# -gt 8 && "$9" != 'default' ]] && context['check.button.bracket.end']=$9
 
-    if [ "${context['name']}" != 'MENU.Null' ]; then
-        local length=${#context['name']}
-        ((length+=${#context['name.header']}))
-        ((length+=${#context['name.footer']}))
-        context['menu.width']=$length
-    fi
+    #if [ "${context['name']}" != 'MENU.Null' ]; then
+    #    local length=${#context['name']}
+    #    ((length += ${#context['name.header']}))
+    #    ((length += ${#context['name.footer']}))
+    #    ((length += 1)) # one space ' ' after the menu's name
+    #    context['menu.width']=$length
+    #fi
 
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
@@ -322,7 +323,7 @@ MENU.SetStyleEx() {
 
 # -----------------------------------------------------------------------------
 # [IN] type - the type of an item to be added, supported types:
-#       {radio-button, check-button, divider, ln-break}
+#       {radio.button, check.button, divider, ln.break}
 #
 # [IN] $* - the rest of arguments comes from the public .Add function
 #
@@ -340,7 +341,7 @@ MENU._add_item() {
     local -A item=()
     item['type']=$1
     item['name']=$item_name
-    item['checked']='off' # used for 'check-button' items only
+    item['checked']='off' # used for 'check.button' items only
     item['alias']='MENU.Null'
     item['callback']='MENU.Null'
 
@@ -355,29 +356,33 @@ MENU._add_item() {
     items[${#items[@]}]=$(declare -p item)
     context['items']=$(declare -p items)
 
-    # Used for 'by-largest' alignment since we need to know what item's length is the longest one
+    # Used for 'by.largest.item' alignment since we need to know what item's length is the longest one
     [[ ${context['item.length.max']} -lt ${#item['name']} ]] && context['item.length.max']=${#item['name']}
 
     # Calculate the width of the menu only if it's a simple alignment mode;
     # because in case of 'by-largest' alignment we cannot accuratelly calculate
     # the width until all the items have been added into the menu
-    if [ "${context['align']}" != 'by.largest.item' ]; then
-        local item_width=${#item['name']}
-        ((item_width += 1)) # ' ' after each item's name
-        [[ "${item['type']}" == 'check-button' || "${item['type']}" == 'radio-button' ]] && ((item_width += 4)) # '[ ] '
-        ((context['menu.width']+=$item_width))
-    else
-        # Will trigger to re-calculate again the menu's width in case an item is added
-        # after the 'menu.width' was calculated the first time
-        context['menu.width']=0
-    fi
+    #if [ "${context['align']}" != 'by.largest.item' ]; then
+    #    local item_width=${#item['name']}
+    #    if [[ "${item['type']}" == 'divider' ]]; then
+    #        ((item_width += ${#context['divider']}))
+    #    elif [[ "${item['type']}" == 'check.button' || "${item['type']}" == 'radio.button' ]]; then
+    #        ((item_width += 4)) # '[ ] '
+    #    fi
+    #    ((item_width += 1)) # ' ' after each item's name
+    #    ((context['menu.width']+=$item_width))
+    #else
+    #    # Will trigger to re-calculate again the menu's width in case an item is added
+    #    # after the 'menu.width' was calculated the first time
+    #    context['menu.width']=0
+    #fi
 
-    [[ ${context['menu.width']} -gt ${MENUEX['width']} ]] && MENUEX['width']=${context['menu.width']}
+    #[[ ${context['menu.width']} -gt ${MENUEX['width']} ]] && MENUEX['width']=${context['menu.width']}
 
     map[$2]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 
-    [[ "${item['type']}" != 'radio-button' && "${item['type']}" != 'check-button' ]] && return
+    [[ "${item['type']}" != 'radio.button' && "${item['type']}" != 'check.button' ]] && return
 
     # Create an alias to call the menu's callback
     if [[ "${item['alias']}" != 'MENU.Null' ]] && [[ "${item['callback']}" != '' ]]; then
@@ -387,7 +392,7 @@ MENU._add_item() {
         fi
 
         # See Select command for the flags:                       show   1    2   mode
-        [[ "${item['type']}" == 'radio-button' ]] && local flags='true false true false' || local flags='true false false current'
+        [[ "${item['type']}" == 'radio.button' ]] && local flags='true false true false' || local flags='true false false current'
         alias "${item['alias']}"="MENU._select $2 \"${item['name']}\" $flags"
     fi
 }
@@ -413,7 +418,7 @@ MENU._add_item() {
 #
 # [IN]      handle - the menu's name/handle
 # [IN]      name   - the name of the selected item
-# [IN][OPT] state  - {on, off} item's state (check-button type only)
+# [IN][OPT] state  - {on, off} item's state (check.button type only)
 #
 # Example:
 #
@@ -427,7 +432,7 @@ MENU.AddRadioButton() {
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item radio-button $menu_name \"\${item_name}\" $*"
+    local cmd="MENU._add_item radio.button $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -435,12 +440,12 @@ MENU.AddCheckButton() {
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item check-button $menu_name \"\${item_name}\" $*"
+    local cmd="MENU._add_item check.button $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
 MENU.AddLnBreak() {
-    local cmd="MENU._add_item ln-break $*"
+    local cmd="MENU._add_item ln.break $*"
     ${cmd}
 }
 
@@ -470,9 +475,9 @@ MENU.AddDivider() {
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
 # [IN][OPT] mode  - call-mode of all the check button item's callbacks
 #
-# DEMO: For example, the following command selects 'Release' radio-button in
+# DEMO: For example, the following command selects 'Release' radio.button in
 #       the demo 'Build' menu, shows the 'Build' menu, and calls the 'Release'
-#       radio-button's callbacks:
+#       radio.button's callbacks:
 #
 # > MENU.Select build_menu Release true false true fals
 #
@@ -494,12 +499,12 @@ MENU.Select() {
     local check_button_set
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
-        if [[ "${item['name']}" == $2 ]] && [[ "${item['type']}" == 'check-button' ]]; then
+        if [[ "${item['name']}" == $2 ]] && [[ "${item['type']}" == 'check.button' ]]; then
             [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
             items["$i"]=$(declare -p item)
             context['items']=$(declare -p items)
 
-            [ "$flagX" == 'true' ] && context['checked']=$2
+            [ "$flagX" == 'true' ] && context['tmp.checked']=$2
             MENU._log_info "CHECK BOX: '$2' state='${item['checked']}'"
 
             check_button_set='true'
@@ -507,7 +512,7 @@ MENU.Select() {
         fi
     done
 
-    # Set selected if the itme's type is the radio-button
+    # Set selected if the itme's type is the radio.button
     [[ ! "$check_button_set" ]] && context['selected']=$2
 
     map[$1]=$(declare -p context)
@@ -541,7 +546,7 @@ MENU._select() {
     # to call the main menu's callback
     [[ $# -gt 6 ]] && f1=$7
 
-    MENU.Select $1 $2
+    MENU.Select $1 "$2"
 
     if [ $# -gt 2 ] && [ "$3" == 'true' ]; then
         MENU._separator $1
@@ -551,24 +556,24 @@ MENU._select() {
 }
 
 # -----------------------------------------------------------------------------
-# Performs an operation for all the check-button items in the menu
+# Performs an operation for all the check.button items in the menu
 #
 # [IN] name - a name/handle of the menu
-# [IN] operation - a type of operation to perform on all the check-buttons:
-#       check   - check all the check-button items
-#       uncheck - un-check all the check-button itmes
-#       flip    - flip the state of all the check-button itmes
+# [IN] operation - a type of operation to perform on all the check.buttons:
+#       check   - check all the check.button items
+#       uncheck - un-check all the check.button itmes
+#       flip    - flip the state of all the check.button itmes
 #
 # The rest of the arguments are 'false' by default:
 #
 # [IN][OPT] show  - {true/false} whether to call MENU.Show
 # [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
-# [IN][OPT] mode  - call-mode of all the check-button item's callbacks
+# [IN][OPT] mode  - call-mode of all the check.button item's callbacks
 #
-# DEMO: For example, the following command flips all the check-buttons in the
+# DEMO: For example, the following command flips all the check.buttons in the
 #       demo 'Build' menu, shows the 'Build' menu, and calls all the checked
-#       check-button's callbacks:
+#       check.button's callbacks:
 #
 # > MENU.CheckButtonForAll build_menu flip true false false checked
 #
@@ -589,7 +594,7 @@ MENU.CheckButtonForAll() {
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        [ "${item['type']}" != 'check-button' ] && continue;
+        [ "${item['type']}" != 'check.button' ] && continue;
 
         local updated='false'
         case $2 in
@@ -633,13 +638,13 @@ MENU.CheckButtonForAll() {
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
 # [IN][OPT] mode  - call-mode of all the check button item's callbacks:
 #            no (false)   - do not call any callback for any item
-#            all (true)   - call all the callbacks for all check-button items
+#            all (true)   - call all the callbacks for all check.button items
 #                           regardless of its state
-#            current      - call the callback of the check-button items that
+#            current      - call the callback of the check.button items that
 #                           changes the state (.Select command only)
-#            checked      - call all the callbacks for all checked check-buttons
+#            checked      - call all the callbacks for all checked check.buttons
 #            unchecked    - call all the callbacks for all un-checked
-#                           check-buttons
+#                           check.buttons
 #
 # DEMO: For example, the following command simply shows/displays the demo
 #       'PLATFORM' menu w/o calling any callbacks:
@@ -661,7 +666,7 @@ MENU.Show() {
     eval "${context['items']}"
 
     if [ "${context['name']}" != 'MENU.Null' ]; then
-        printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']}"
+        printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']} "
     fi
 
     local idx=0
@@ -686,10 +691,16 @@ MENU.Show() {
 
         local type=${item['type']}
 
-        if [ "$type" == 'ln-break' ]; then
+        if [ "$type" == 'ln.break' ]; then
             printf '\n'
-            local pad=$(MENU._string_pad '' ${#context['name']})
-            printf "     $pad"
+            if [ "${context['name']}" != 'MENU.Null' ]; then
+                local width=${#context['name']}
+                ((width += ${#context['name.header']}))
+                ((width += ${#context['name.footer']}))
+                ((width += 1))
+                local pad=$(MENU._string_pad '' $width)
+                printf "$pad"
+            fi
             continue
         fi
 
@@ -705,14 +716,14 @@ MENU.Show() {
         fi
 
         local alias=${item['alias']}
-        local color_ref=${context['color']}
+        local color_ref=${context['select.color']}
         local color=${styles["$color_ref"]}
         local selected=${context['selected']}
 
-        if [ "$type" == 'radio-button' ]; then
+        if [ "$type" == 'radio.button' ]; then
             if [ "${item['name']}" == "$selected" ]; then
                 local hi=${styles['smul']}${item['alias']}${styles['rmul']}
-                printf "${color}${styles['bold']}${context['radio.symbol.start']}${context['radio.symbol']}${context['radio.symbol.end']} ${name/$alias/$hi}${styles['reset']} "
+                printf "${color}${styles['bold']}${context['radio.button.bracket.start']}${context['radio.button.symbol']}${context['radio.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
 
                 # Store the radio button item's callback to be called later
                 if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
@@ -721,23 +732,23 @@ MENU.Show() {
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context['radio.symbol.start']} ${context['radio.symbol.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                printf "${context['radio.button.bracket.start']} ${context['radio.button.bracket.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
             fi
             continue;
         fi
 
-        if [ "$type" == 'check-button' ]; then
+        if [ "$type" == 'check.button' ]; then
             local mode=$4
             if [ "${item['checked']}" == 'on' ]; then
                 local hi=${styles['smul']}${item['alias']}${styles['rmul']}
-                printf "${color}${styles['bold']}${context['check.symbol.start']}${context['check.symbol']}${context['check.symbol.end']} ${name/$alias/$hi}${styles['reset']} "
+                printf "${color}${styles['bold']}${context['check.button.bracket.start']}${context['check.button.symbol']}${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
                 if [ "$mode" == 'checked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context['check.symbol.start']} ${context['check.symbol.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                printf "${context['check.button.bracket.start']} ${context['check.button.bracket.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
                 if [ "$mode" == 'unchecked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
@@ -745,15 +756,15 @@ MENU.Show() {
                 fi
             fi
 
-            if [ "${context['checked']}" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+            if [ "${context['tmp.checked']}" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                 callbacks[$idx]=${item['callback']}
                 arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                 idx=$(($idx + 1))
 
-                MENU._log_warning "mode: $mode context[checked]: ${context['checked']}"
+                MENU._log_warning "mode: $mode context[checked]: ${context['tmp.checked']}"
                 MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
 
-                context['checked']=''
+                context['tmp.checked']=''
 
                 map[$1]=$(declare -p context)
                 MENUEX['map']=$(declare -p map)
@@ -789,7 +800,7 @@ MENU.Show() {
 #           of how the menus were created
 # [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
 # [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
-# [IN][OPT] mode  - call-mode of all the check-button item's callbacks
+# [IN][OPT] mode  - call-mode of all the check.button item's callbacks
 #
 # Remark: By default, the displaying order of the menus corresponds to the
 #         order of how the keys of the bash's assosiative array are sorted
@@ -823,7 +834,8 @@ MENU.ShowAll() {
 
 # -----------------------------------------------------------------------------
 # It's quite tricky to calculate accuratelly the menu's length because of such
-# factors as ln-break and alignment
+# factors as ln.break, alignment, and customizable chars for the radio/check
+# buttons
 #
 # [IN]  name   - the menu's handle
 # [OUT] length - the length of the menu
@@ -841,33 +853,46 @@ MENU._calculate_menu_width() {
 
     local max=0
     local length=0
+
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        local name=$(MENU._string_pad ${item['name']} ${context['item.length.max']})
+        local item_length=0
         case ${item['type']} in
-            check-button | radio-button)
-                ((length += 4)) # '[ ] ' or '( ) '
+            check.button | radio.button)
+                [ "${context['align']}" == "by.largest.item" ] && ((item_length += ${context['item.length.max']})) || ((item_length += ${#item['name']}))
+                ((item_length += ${#context["${item['type']}.bracket.start"]}))
+                ((item_length += ${#context["${item['type']}.bracket.end"]}))
+                ((item_length += ${#context["${item['type']}.symbol"]}))
+                ((item_length += 1))
                 ;;
             divider)
-                ((length += 1)) # ' '
+                ((item_length += ${#context['divider']}))
                 ;;
-            ln-break)
+            label)
+                ((item_length += ${#item['name']}))
+                ;;
+            ln.break)
                 [ $length -gt $max ] && max=$length
+                length=0
                 continue
                 ;;
         esac
 
-        ((length += ${#name}))
-        ((length += 1)) # ' ' after each item's name
+        ((item_length += 1)) # one space ' ' after each item's name
+        ((length += $item_length))
     done
+
+    [ $length -gt $max ] && max=$length
 
     local width=0
     [ $max -gt 0 ] && width=$max || width=$length
 
     if [[ "${context['name']}" != 'MENU.Null' ]]; then
         ((width += ${#context['name']}))
-        ((width += 4)) # ' * :'
+        ((width += ${#context['name.header']}))
+        ((width += ${#context['name.footer']}))
+        ((width += 1)) # one space ' ' after the menu's name
     fi
 
     echo $width
@@ -907,6 +932,7 @@ MENU._separator() {
     [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width']}
 
     if [ "${context['separator.show']}" == 'true' ]; then
+        ((width--)) # compensation because printf already prints out one 'separator' symbol
         cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
         eval $cmd
         echo ""
@@ -932,14 +958,13 @@ MENU._debug_print() {
     for ctx_key in "${!context[@]}"; do
         if [ "$ctx_key" == 'items' ]; then
             echo "  - [$ctx_key]:"
-            eval "${context["$ctx_key"]}" # unpack: items variable
+            eval "${context["$ctx_key"]}"
             for items_key in "${!items[@]}"; do
                 echo "    + [$items_key]: ${items["$items_key"]}"
-                eval "${items["$items_key"]}" # unpack: item variable
-                # to iterate through item[] array
-                #for indx in "${!item[@]}"; do
-                #    printf "      ♦ [$indx]: ${item["$indx"]}\n"
-                #done
+                eval "${items["$items_key"]}"
+                for indx in "${!item[@]}"; do
+                    printf "      ♦ [$indx]: ${item["$indx"]}\n"
+                done
             done
         else
             printf "  - [$ctx_key]: ${context["$ctx_key"]}${styles['reset']}\n"
@@ -1007,6 +1032,7 @@ MENU.CreateDemo() {
     # 5 [OPT]       |      |           |            |    symbol1       - the select symbol for the radio button when selected
     # 6 [OPT]       |      |           |            |      |   symbol2 - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default by.largest.item ${red} '○' default
+    #MENU.SetStyle pl_menu default by.largest.item
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1032,7 +1058,7 @@ MENU.CreateDemo() {
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Add a radio-button item into the menu
+    # Add a radio.button item into the menu
     #
     # 1               handle                    - a name/handle of the menu to be used w/ the API
     # 2                 |    name               - an item's name to be added into the menu
@@ -1065,6 +1091,8 @@ MENU.CreateDemo() {
     MENU.AddLabel pl_menu QEMU:
     MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
     MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
+    MENU.AddDivider pl_menu
+    MENU.AddRadioButton pl_menu "Name w/ space" ace MENU.DemoPlQemuCb
 
     # -----------------------------------------------------------------------------------------------------------------
     # Select an item of the menu
@@ -1125,19 +1153,20 @@ MENU.CreateDemo() {
     #
     # Demo menu 'LOGS'
     #
-    MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
+    MENU.Create logs_menu $null LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by.largest.item
 
     MENU.AddRadioButton logs_menu FATAL $null MENU.DemoLogsCb
-
     MENU.AddRadioButton logs_menu SEVERE $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu INFO $null MENU.DemoLogsCb
-    MENU.AddLnBreak logs_menu
+    MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
+    #MENU.AddLnBreak logs_menu
     MENU.AddRadioButton logs_menu FINE $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu FINER $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
+
+
     MENU.Select logs_menu INFO false
     #MENU.Show logs_menu true true
 
@@ -1158,7 +1187,7 @@ MENU.DemoMainMenu() {
 
 # [IN]      handle - the menu's name/handle
 # [IN]      name   - the name of the selected item
-# [IN][OPT] state  - {on, off} item's state (check-button type only)
+# [IN][OPT] state  - {on, off} item's state (check.button type only)
 MENU.DemoPlQemuCb() {
     MENU._separator $1
     echo " PL.Qemu.$2.Callback..."
