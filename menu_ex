@@ -19,7 +19,7 @@ declare -A MENUEX=()
 # A map that holds all the menus created
 MENUEX['map']='declare -A map=()'
 
-# Change to 'Debug' if logs required
+# Change to 'Debug' for debugging/testing: logs will be shown
 MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
 
@@ -676,13 +676,21 @@ MENU.Show() {
         idx=$(($idx + 1))
     fi
 
+    # The number of spaces needed to cover the radio/check.button symbol for example: [' '] one space
+    # if symbol 'x' is 1 char, and 3 spaces ['   '] if button symbol is 'xxx' 3 chars
+    local check_spaces=$(MENU._string_pad '' ${#context['check.button.symbol']})
+    local radio_spaces=$(MENU._string_pad '' ${#context['radio.button.symbol']})
+
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
         local name=${item['name']}
 
-        if [ "${context['align']}" == 'by.largest.item' ]; then
-            name=$(MENU._string_pad ${item['name']} ${context['item.length.max']})
+        if [ "${context['align']}" == 'by.largest.item' ] && [ "${item['type']}" != 'label' ]; then
+            local sz=${context['item.length.max']}
+            ((sz -= ${#item['name']}))
+            local pad=$(MENU._string_pad '' $sz)
+            name=${item['name']}$pad
         fi
 
         local type=${item['type']}
@@ -719,7 +727,11 @@ MENU.Show() {
         if [ "$type" == 'radio.button' ]; then
             if [ "${item['name']}" == "$selected" ]; then
                 local hi=${styles['smul']}${item['alias']}${styles['rmul']}
-                printf "${color}${styles['bold']}${context['radio.button.bracket.start']}${context['radio.button.symbol']}${context['radio.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
+
+                # '(*) Name '
+                printf "${color}${styles['bold']}${context['radio.button.bracket.start']}"
+                printf "${context['radio.button.symbol']}${context['radio.button.bracket.end']} "
+                printf "${name/$alias/$hi}${styles['reset']} "
 
                 # Store the radio button item's callback to be called later
                 if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
@@ -728,7 +740,9 @@ MENU.Show() {
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context['radio.button.bracket.start']} ${context['radio.button.bracket.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                # '( ) Name '
+                printf "${context['radio.button.bracket.start']}$radio_spaces${context['radio.button.bracket.end']} "
+                printf "${name/$alias/${styles['smul']}$alias${styles['reset']}} "
             fi
             continue;
         fi
@@ -737,14 +751,21 @@ MENU.Show() {
             local mode=$4
             if [ "${item['checked']}" == 'on' ]; then
                 local hi=${styles['smul']}${item['alias']}${styles['rmul']}
-                printf "${color}${styles['bold']}${context['check.button.bracket.start']}${context['check.button.symbol']}${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
+
+                # '[x] Name '
+                printf "${color}${styles['bold']}${context['check.button.bracket.start']}${context['check.button.symbol']}"
+                printf "${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
+
                 if [ "$mode" == 'checked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context['check.button.bracket.start']} ${context['check.button.bracket.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                # '[ ] Name '
+                printf "${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
+                printf "${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+
                 if [ "$mode" == 'unchecked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
@@ -1026,10 +1047,10 @@ MENU.CreateDemo() {
     # 2 [OPT]       |    divider                                       - devider to be used w/ .AddDivider ('|' by default)
     # 3 [OPT]       |      |        alignment                          - alignent of the item names (none by default)
     # 4 [OPT]       |      |           |          color                - the color of hightlighted items (green by default)
-    # 5 [OPT]       |      |           |            |    symbol1       - the select symbol for the radio button when selected
-    # 6 [OPT]       |      |           |            |      |   symbol2 - the check symbol for the check button when checked
-    #MENU.SetStyle pl_menu default by.largest.item ${red} '○' default
-    #MENU.SetStyle pl_menu default by.largest.item
+    # 5 [OPT]       |      |           |            |  symbol1       - the select symbol for the radio button when selected
+    # 6 [OPT]       |      |           |            |   |  symbol2 - the check symbol for the check button when checked
+    #MENU.SetStyle pl_menu default by.largest.item red '○' default
+    MENU.SetStyle pl_menu default by.largest.item
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1045,13 +1066,10 @@ MENU.CreateDemo() {
     # 9 [OPT]         |       |    |    |    |   |   |   |  symbol.chk.end - check.button closing symbol (']' by default)
     #MENU.SetStyleEx pl_menu true '-' " * " ":" '(' ')' '[' ']'
     #
-    # For example you want to create a menu that looks like this:
-    #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #  => MENU - / / Item1 /*/ Item2 / / Item3 | | chk1 |+| chk2
-    #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # For example:
     #
-    #MENU.SetStyleEx pl_menu true '~' "=>" " -" '/' '/' '|' '|'
-    #MENU.SetStyle pl_menu default default ${red} '*' '+'
+    #MENU.SetStyleEx pl_menu true '=' " + '" "':" '[[' ']]' '((' '))'
+    #MENU.SetStyle pl_menu default by.largest.item cyan 'xx' '***'
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1150,18 +1168,18 @@ MENU.CreateDemo() {
     #
     # Demo menu 'LOGS'
     #
-    MENU.Create logs_menu $null LOGS MENU.DemoMainMenu
+    MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
     MENU.SetStyle logs_menu default by.largest.item
 
     MENU.AddRadioButton logs_menu FATAL $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu SEVERE $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu INFO $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
-    #MENU.AddLnBreak logs_menu
+    MENU.AddLnBreak logs_menu
     MENU.AddRadioButton logs_menu FINE $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu FINER $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
 
 
     MENU.Select logs_menu INFO false
