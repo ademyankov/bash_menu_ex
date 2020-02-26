@@ -11,21 +11,22 @@
 #
 # -----------------------------------------------------------------------------
 
-# Global Map that holds all the menus created
+# -----------------------------------------------------------------------------
+# The global variable that holds the menu object
 unset MENUEX
 declare -A MENUEX=()
+
+# A map that holds all the menus created
 MENUEX["map"]="declare -A map=()"
-MENUEX["order"]="declare -a order=()"
+
+# Calculated width of the entire menu
 MENUEX["width"]=0
-MENUEX["build"]='Debug'
 
 # Tracks the order of menus created
+MENUEX["order"]="declare -a order=()"
 
 # Change to 'Debug' if logs are needed
-unset MENUBUILD
-#declare -g MENUBUILD='Release'
-declare -g MENUBUILD='Debug'
-
+MENUEX["build"]='Release'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -121,11 +122,11 @@ MENU._log() {
 }
 
 MENU._log_info() {
-    [[ "$MENUBUILD" == "Debug" ]] && MENU._log INFO $1
+    [[ "${MENUEX["build"]}" == "Debug" ]] && MENU._log INFO $1
 }
 
 MENU._log_warning() {
-    [[ "$MENUBUILD" == "Debug" ]] && MENU._log WARNING $1
+    [[ "${MENUEX["build"]}" == "Debug" ]] && MENU._log WARNING $1
 }
 
 MENU._error() {
@@ -167,14 +168,9 @@ MENU.Create() {
     context["selected"]=''
     context["item.length.max"]=0   # the max char length of an item's name
     context["menu.width"]=0     # the length of the longest string in the menu (used for menu's separator)
+    context["name"]=$2
 
     MENU._log_info "args: $*"
-
-    context["name"]=$2
-    if [ "$2" != "MENU.Null" ]; then
-        context["menu.width"]=${#2}
-        ((context["menu.width"] += 5 )) # ' * ' + <name> + ': '
-    fi
 
     [ $# -gt 2 ] && context["alias"]=$3
     [ $# -gt 3 ] && context["callback"]=$4
@@ -198,9 +194,9 @@ MENU.Create() {
 
     # Create an alias to display the menu
     if [ "${context['alias']}" != '' ]; then
-        if [ `alias | grep ${context['alias']} | wc -l` != 0 ]; then
+        if [ `alias | grep "alias ${context['alias']}=" | wc -l` != 0 ]; then
             MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
-            [ "$MENUBUILD" == "Release" ] && return
+            [ "${MENUEX["build"]}" == "Release" ] && return
         fi
         local argc="$1 ${context["name"]} ${context["alias"]} ${context["callback"]}"
         alias "${context['alias']}"="MENU._show ${argc}"
@@ -267,7 +263,7 @@ MENU.SetStyle() {
 #                                  separator (true by default)
 # 3 [IN][OPT] separator.symbol   - separator symbol ('-' by default)
 # 4 [IN][OPT] name.header        - menu's name header (' * ' by default)
-# 5 [IN][OPT] name.footer        - menu's name footer (':' by default)
+# 5 [IN][OPT] name.footer        - menu's name footer (': ' by default)
 # 6 [IN][OPT] radio.symbol.start - radio.button opening symbol ('(' by default)
 # 7 [IN][OPT] radio.symbol.end   - radio.button closing symbol (')' by default)
 # 8 [IN][OPT] check.symbol.start - check.button opening symbol ('[' by default)
@@ -289,7 +285,7 @@ MENU.SetStyleEx() {
     context["separator.show"]='true'
     context["separator.symbol"]='-'
     context["name.header"]=' * '
-    context["name.footer"]=':'
+    context["name.footer"]=': '
     context["radio.symbol.start"]='('
     context["radio.symbol.end"]=')'
     context["check.symbol.start"]='['
@@ -304,6 +300,13 @@ MENU.SetStyleEx() {
     [[ $# -gt 6 && "$7" != "default" ]] && context["radio.symbol.end"]=$7
     [[ $# -gt 7 && "$8" != "default" ]] && context["check.symbol.start"]=$8
     [[ $# -gt 8 && "$9" != "default" ]] && context["check.symbol.end"]=$9
+
+    if [ "${context["name"]}" != "MENU.Null" ]; then
+        local length=${#context["name"]}
+        ((length+=${#context["name.header"]}))
+        ((length+=${#context["name.footer"]}))
+        context["menu.width"]=$length
+    fi
 
     map[$1]=$(declare -p context)
     MENUEX["map"]=$(declare -p map)
@@ -369,10 +372,10 @@ MENU._add_item() {
     [[ "${item['type']}" != "radio-button" && "${item['type']}" != "check-button" ]] && return
 
     # Create an alias to call the menu's callback
-    if [[ "${item['alias']}" != '' ]] && [[ "${item['callback']}" != '' ]]; then
-        if [ `alias | grep ${item['alias']} | wc -l` != 0 ]; then
+    if [[ "${item['alias']}" != 'MENU.Null' ]] && [[ "${item['callback']}" != '' ]]; then
+        if [ `alias | grep "alias ${item['alias']}=" | wc -l` != 0 ]; then
             MENU._warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
-            [[ "$MENUBUILD" == "Release" ]] && return
+            [[ "${MENUEX["build"]}" == "Release" ]] && return
         fi
 
         # See Select command for the flags:                       show   1    2   mode
@@ -649,7 +652,7 @@ MENU.Show() {
     eval "${context["items"]}"
 
     if [ "${context["name"]}" != "MENU.Null" ]; then
-        printf "${context["name.header"]}${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}${context["name.footer"]} "
+        printf "${context["name.header"]}${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}${context["name.footer"]}"
     fi
 
     local idx=0
@@ -932,7 +935,7 @@ MENU._debug_print() {
 }
 
 MENU._debug_print_all() {
-    [[ "$MENUBUILD" == "Release" ]] && return
+    [[ "${MENUEX["build"]}" == "Release" ]] && return
 
     eval "${MENUEX["map"]}"
     for key in "${!map[@]}"; do
@@ -945,13 +948,6 @@ MENU._debug_print_all() {
 # Demo Example
 #
 # ---------------------------------------------------------------------------------------------------------------------
-
-# ********************   TODO LIST   ********************
-# TODO: lower case alias ???
-# ********************   TODO LIST   ********************
-
-
-#source menu_ex
 
 alias demo='MENU.Demo'
 alias dev='MENU.ShowAll true'
