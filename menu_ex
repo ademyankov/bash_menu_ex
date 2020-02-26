@@ -262,15 +262,16 @@ MENU.SetStyle() {
 # -----------------------------------------------------------------------------
 # Set the extra style of the menu (replace the default style)
 #
-# 1 [IN]      handle             - a name/handle of the menu to be used w/ the API
-# 2 [IN][OPT] separator.show     - xxx
-# 3 [IN][OPT] separator.symbol   -
-# 4 [IN][OPT] name.header        -
-# 5 [IN][OPT] name.footer        -
-# 6 [IN][OPT] radio.symbol.start -
-# 7 [IN][OPT] radio.symbol.end   -
-# 8 [IN][OPT] check.symbol.start -
-# 9 [IN][OPT] check.symbol.end   -
+# 1 [IN]      handle             - a name/handle of the menu
+# 2 [IN][OPT] separator.show     - {true/false} whether to print the menu's
+#                                  separator (true by default)
+# 3 [IN][OPT] separator.symbol   - separator symbol ('-' by default)
+# 4 [IN][OPT] name.header        - menu's name header (' * ' by default)
+# 5 [IN][OPT] name.footer        - menu's name footer (':' by default)
+# 6 [IN][OPT] radio.symbol.start - radio.button opening symbol ('(' by default)
+# 7 [IN][OPT] radio.symbol.end   - radio.button closing symbol (')' by default)
+# 8 [IN][OPT] check.symbol.start - check.button opening symbol ('[' by default)
+# 9 [IN][OPT] check.symbol.end   - check.button closing symbol (']' by default)
 #
 # Remark: 'default' can be used to specify the default argument
 #
@@ -698,7 +699,7 @@ MENU.Show() {
         if [ "$type" == "radio-button" ]; then
             if [ "${item["name"]}" == "$selected" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
-                printf "${color}${bold}(${context["radio.symbol"]}) ${name/$alias/$hi}${reset} "
+                printf "${color}${bold}${context["radio.symbol.start"]}${context["radio.symbol"]}${context["radio.symbol.end"]} ${name/$alias/$hi}${reset} "
 
                 # Store the radio button item's callback to be called later
                 if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
@@ -707,7 +708,7 @@ MENU.Show() {
                     idx=$(($idx + 1))
                 fi
             else
-                printf "( ) ${name/$alias/${smul}$alias${reset}} "
+                printf "${context["radio.symbol.start"]} ${context["radio.symbol.end"]} ${name/$alias/${smul}$alias${reset}} "
             fi
             continue;
         fi
@@ -716,14 +717,14 @@ MENU.Show() {
             local mode=$4
             if [ "${item["checked"]}" == "on" ]; then
                 local hi=${smul}${item["alias"]}${rmul}
-                printf "${color}${bold}[${context["check.symbol"]}] ${name/$alias/$hi}${reset} "
+                printf "${color}${bold}${context["check.symbol.start"]}${context["check.symbol"]}${context["check.symbol.end"]} ${name/$alias/$hi}${reset} "
                 if [ "$mode" == "checked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
                     idx=$(($idx + 1))
                 fi
             else
-                printf "[ ] ${name/$alias/${smul}$alias${reset}} "
+                printf "${context["check.symbol.start"]} ${context["check.symbol.end"]} ${name/$alias/${smul}$alias${reset}} "
                 if [ "$mode" == "unchecked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
@@ -891,9 +892,11 @@ MENU._separator() {
 
     [[ $# -gt 1 && "$2" == "true" ]] && width=${MENUEX["width"]}
 
-    cmd="printf -- '${context["separator.symbol"]}%.0s' {1..$width}"
-    eval $cmd
-    echo ""
+    if [ "${context["separator.show"]}" == "true" ]; then
+        cmd="printf -- '${context["separator.symbol"]}%.0s' {1..$width}"
+        eval $cmd
+        echo ""
+    fi
 }
 
 # arguments are comming from the main menu's alias: $* f1 f2 mode
@@ -943,12 +946,7 @@ MENU._debug_print_all() {
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-
 # ********************   TODO LIST   ********************
-# TODO: SetStyleEx: print separator true/false, true - by default
-# TODO: separator char, '-' by default
-# TODO: radio-box open char '(', close char ')'
-# TODO: check-box open char '[', close char ']'
 # TODO: lower case alias ???
 # ********************   TODO LIST   ********************
 
@@ -1007,24 +1005,24 @@ MENU.Demo() {
 
     # -----------------------------------------------------------------------------------------------------------------
     # Set the extra style of the menu (replace the default style)
-    # 1            handle                                                - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]         |   separator.show                                 - xxx
-    # 3 [OPT]         |     |  symbol.sep                                - devider to be used w/ .AddDivider ('|' by default)
-    # 4 [OPT]         |     |    |  name.header                          - alignent of the item names (none by default)
-    # 5 [OPT]         |     |    |    |  name.footer                     - the color of hightlighted items (green by default)
-    # 6 [OPT]         |     |    |    |    | symbol.radio.start          - the select symbol for the radio button when selected
-    # 7 [OPT]         |     |    |    |    |   | symbol.radio.end        - the check symbol for the check button when checked
-    # 8 [OPT]         |     |    |    |    |   |   | symbol.chk.start    - the check symbol for the check button when checked
-    # 9 [OPT]         |     |    |    |    |   |   |   |  symbol.chk.end - the check symbol for the check button when checked
-    #MENU.SetStyleEx MENU1 true '-' " * " ":" '(' ')' '[' ']'
+    # 1            handle                                                  - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]         |     separator.show                                 - {true/false} whether to print the menu's separator (true by default)
+    # 3 [OPT]         |       |  separator.symbol                          - separator symbol ('-' by default)
+    # 4 [OPT]         |       |    |  name.header                          - menu's name header (' * ' by default)
+    # 5 [OPT]         |       |    |    |  name.footer                     - menu's name footer (':' by default)
+    # 6 [OPT]         |       |    |    |    | symbol.radio.start          - radio.button opening symbol ('(' by default)
+    # 7 [OPT]         |       |    |    |    |   | symbol.radio.end        - radio.button closing symbol (')' by default)
+    # 8 [OPT]         |       |    |    |    |   |   | symbol.chk.start    - check.button opening symbol ('[' by default)
+    # 9 [OPT]         |       |    |    |    |   |   |   |  symbol.chk.end - check.button closing symbol (']' by default)
+    #MENU.SetStyleEx pl_menu true '-' " * " ":" '(' ')' '[' ']'
     #
     # For example you want to create a menu that looks like this:
     #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #  => MENU - / / Item1 /*/ Item2 / / Item3 === | | chk1 |+| chk2
+    #  => MENU - / / Item1 /*/ Item2 / / Item3 | | chk1 |+| chk2
     #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #
-    #MENU.SetStyleEx MENU1 true '~' "=>" " -" '/' '/' '|' '|'
-    #MENU.SetStyle MENU1 "===" default ${red} '*' '+'
+    #MENU.SetStyleEx pl_menu true '~' "=>" " -" '/' '/' '|' '|'
+    #MENU.SetStyle pl_menu default default ${red} '*' '+'
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
