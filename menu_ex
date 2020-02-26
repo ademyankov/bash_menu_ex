@@ -26,7 +26,7 @@ MENUEX['width']=0
 MENUEX['order']='declare -a order=()'
 
 # Change to 'Debug' if logs required
-MENUEX['build']='Release'
+MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -123,6 +123,9 @@ MENU._warning() {
 #
 # -----------------------------------------------------------------------------
 MENU.Create() {
+    local ctor="MENU._ctor"
+    ${ctor}
+
     if [[ $# -lt 1 ]]; then
         MENU._error "MENU.Create requires more arguments"
         return
@@ -154,14 +157,11 @@ MENU.Create() {
     order[${#order[@]}]=$1
     MENUEX['order']=$(declare -p order)
 
-    local func="MENU.SetStyle $1"
-    ${func}
+    local default="MENU.SetStyle $1"
+    ${default}
 
-    func="MENU.SetStyleEx $1"
-    ${func}
-
-    func="MENU._fill_styles_table"
-    ${func}
+    default="MENU.SetStyleEx $1"
+    ${default}
 
     # Create an alias to display the menu
     if [ "${context['alias']}" != '' ]; then
@@ -174,10 +174,9 @@ MENU.Create() {
     fi
 }
 
-MENU._fill_styles_table() {
-    if [[ ! ${MENUEX["styles"]} ]]; then
-        echo 'styles...'
-
+# The menu's class constructor
+MENU._ctor() {
+    if [[ ! ${MENUEX['styles']} ]]; then
         # Num  Colour    define          R G B
         # 0    black     COLOR_BLACK     0,0,0
         # 1    red       COLOR_RED       1,0,0
@@ -189,7 +188,7 @@ MENU._fill_styles_table() {
         # 7    white     COLOR_WHITE     1,1,1
 
         local -A styles=()
-        styles['green']=`tput setaf 0`
+        styles['black']=`tput setaf 0`
         styles['red']=`tput setaf 1`
         styles['green']=`tput setaf 2`
         styles['yellow']=`tput setaf 3`
@@ -208,7 +207,7 @@ MENU._fill_styles_table() {
         styles['rmso']=`tput rmso`  # Exit standout mode
         styles['rev']=`tput rev`    # Turn on reverse video mode
 
-        MENUEX["styles"]=$(declare -p styles)
+        MENUEX['styles']=$(declare -p styles)
     fi
 }
 
@@ -236,33 +235,32 @@ MENU._fill_styles_table() {
 # -----------------------------------------------------------------------------
 MENU.SetStyle() {
     if [[ $# -lt 1 ]]; then
-      MENU._error "MENU.SetStyle requires more arguments"
+      MENU._error 'MENU.SetStyle requires more arguments'
       return
     fi
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
     # By default
-    context["divider"]='|'
-    context["align"]='none'
-    #context["color"]=${green}
-    context["color"]='green'
-    context["radio.symbol"]='♦'
-    context["check.symbol"]='x'
+    context['divider']='|'
+    context['align']='none'
+    context['color']='green'
+    context['radio.symbol']='♦'
+    context['check.symbol']='x'
 
     # Optional arguments
-    [[ $# -gt 1 && "$2" != "default" ]] && context["divider"]=$2
-    [[ $# -gt 2 && "$3" != "default" ]] && context["align"]=$3
-    [[ $# -gt 3 && "$4" != "default" ]] && context["color"]=$4
-    [[ $# -gt 4 && "$5" != "default" ]] && context["radio.symbol"]=$5
-    [[ $# -gt 5 && "$6" != "default" ]] && context["check.symbol"]=$6
+    [[ $# -gt 1 && "$2" != 'default' ]] && context['divider']=$2
+    [[ $# -gt 2 && "$3" != 'default' ]] && context['align']=$3
+    [[ $# -gt 3 && "$4" != 'default' ]] && context['color']=$4
+    [[ $# -gt 4 && "$5" != 'default' ]] && context['radio.symbol']=$5
+    [[ $# -gt 5 && "$6" != 'default' ]] && context['check.symbol']=$6
 
     # In case of a complex alignment the menu's width needs to be calculated when shown
-    [[ "${context["align"]}" == "by.largest.item" ]] && context["menu.width"]=0
+    [[ "${context['align']}" == 'by.largest.item' ]] && context['menu.width']=0
 
     map[$1]=$(declare -p context)
-    MENUEX["map"]=$(declare -p map)
+    MENUEX['map']=$(declare -p map)
 }
 
 # -----------------------------------------------------------------------------
@@ -284,42 +282,42 @@ MENU.SetStyle() {
 # -----------------------------------------------------------------------------
 MENU.SetStyleEx() {
     if [[ $# -lt 1 ]]; then
-      MENU._error "MENU.SetStyle requires more arguments"
+      MENU._error 'MENU.SetStyle requires more arguments'
       return
     fi
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
     # By default
-    context["separator.show"]='true'
-    context["separator.symbol"]='-'
-    context["name.header"]=' * '
-    context["name.footer"]=': '
-    context["radio.symbol.start"]='('
-    context["radio.symbol.end"]=')'
-    context["check.symbol.start"]='['
-    context["check.symbol.end"]=']'
+    context['separator.show']='true'
+    context['separator.symbol']='-'
+    context['name.header']=' * '
+    context['name.footer']=': '
+    context['radio.symbol.start']='('
+    context['radio.symbol.end']=')'
+    context['check.symbol.start']='['
+    context['check.symbol.end']=']'
 
     # Optional arguments
-    [[ $# -gt 1 && "$2" != "default" ]] && context["separator.show"]=$2
-    [[ $# -gt 2 && "$3" != "default" ]] && context["separator.symbol"]=$3
-    [[ $# -gt 3 && "$4" != "default" ]] && context["name.header"]=$4
-    [[ $# -gt 4 && "$5" != "default" ]] && context["name.footer"]=$5
-    [[ $# -gt 5 && "$6" != "default" ]] && context["radio.symbol.start"]=$6
-    [[ $# -gt 6 && "$7" != "default" ]] && context["radio.symbol.end"]=$7
-    [[ $# -gt 7 && "$8" != "default" ]] && context["check.symbol.start"]=$8
-    [[ $# -gt 8 && "$9" != "default" ]] && context["check.symbol.end"]=$9
+    [[ $# -gt 1 && "$2" != 'default' ]] && context['separator.show']=$2
+    [[ $# -gt 2 && "$3" != 'default' ]] && context['separator.symbol']=$3
+    [[ $# -gt 3 && "$4" != 'default' ]] && context['name.header']=$4
+    [[ $# -gt 4 && "$5" != 'default' ]] && context['name.footer']=$5
+    [[ $# -gt 5 && "$6" != 'default' ]] && context['radio.symbol.start']=$6
+    [[ $# -gt 6 && "$7" != 'default' ]] && context['radio.symbol.end']=$7
+    [[ $# -gt 7 && "$8" != 'default' ]] && context['check.symbol.start']=$8
+    [[ $# -gt 8 && "$9" != 'default' ]] && context['check.symbol.end']=$9
 
-    if [ "${context["name"]}" != "MENU.Null" ]; then
-        local length=${#context["name"]}
-        ((length+=${#context["name.header"]}))
-        ((length+=${#context["name.footer"]}))
-        context["menu.width"]=$length
+    if [ "${context['name']}" != 'MENU.Null' ]; then
+        local length=${#context['name']}
+        ((length+=${#context['name.header']}))
+        ((length+=${#context['name.footer']}))
+        context['menu.width']=$length
     fi
 
     map[$1]=$(declare -p context)
-    MENUEX["map"]=$(declare -p map)
+    MENUEX['map']=$(declare -p map)
 }
 
 # -----------------------------------------------------------------------------
@@ -340,57 +338,57 @@ MENU._add_item() {
     eval item_name="$3"
 
     local -A item=()
-    item["type"]=$1
-    item["name"]=$item_name
-    item["checked"]='off' # used for 'check-button' items only
-    item["alias"]='MENU.Null'
-    item["callback"]='MENU.Null'
+    item['type']=$1
+    item['name']=$item_name
+    item['checked']='off' # used for 'check-button' items only
+    item['alias']='MENU.Null'
+    item['callback']='MENU.Null'
 
     # Optional arguments
-    [ $# -gt 3 ] && item["alias"]=$4
-    [ $# -gt 4 ] && item["callback"]=$5
+    [ $# -gt 3 ] && item['alias']=$4
+    [ $# -gt 4 ] && item['callback']=$5
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$2"]}"
-    eval "${context["items"]}"
+    eval "${context['items']}"
 
     items[${#items[@]}]=$(declare -p item)
-    context["items"]=$(declare -p items)
+    context['items']=$(declare -p items)
 
     # Used for 'by-largest' alignment since we need to know what item's length is the longest one
-    [[ ${context["item.length.max"]} -lt ${#item["name"]} ]] && context["item.length.max"]=${#item["name"]}
+    [[ ${context['item.length.max']} -lt ${#item['name']} ]] && context['item.length.max']=${#item['name']}
 
     # Calculate the width of the menu only if it's a simple alignment mode;
     # because in case of 'by-largest' alignment we cannot accuratelly calculate
     # the width until all the items have been added into the menu
-    if [ "${context["align"]}" != "by.largest.item" ]; then
-        local item_width=${#item["name"]}
-        ((item_width+=1)) # ' ' after each item's name
-        [[ "${item['type']}" == "check-button" || "${item['type']}" == "radio-button" ]] && ((item_width+=4)) # '[ ] '
-        ((context["menu.width"]+=$item_width))
+    if [ "${context['align']}" != 'by.largest.item' ]; then
+        local item_width=${#item['name']}
+        ((item_width += 1)) # ' ' after each item's name
+        [[ "${item['type']}" == 'check-button' || "${item['type']}" == 'radio-button' ]] && ((item_width += 4)) # '[ ] '
+        ((context['menu.width']+=$item_width))
     else
         # Will trigger to re-calculate again the menu's width in case an item is added
         # after the 'menu.width' was calculated the first time
-        context["menu.width"]=0
+        context['menu.width']=0
     fi
 
-    [[ ${context["menu.width"]} -gt ${MENUEX["width"]} ]] && MENUEX["width"]=${context["menu.width"]}
+    [[ ${context['menu.width']} -gt ${MENUEX['width']} ]] && MENUEX['width']=${context['menu.width']}
 
     map[$2]=$(declare -p context)
-    MENUEX["map"]=$(declare -p map)
+    MENUEX['map']=$(declare -p map)
 
-    [[ "${item['type']}" != "radio-button" && "${item['type']}" != "check-button" ]] && return
+    [[ "${item['type']}" != 'radio-button' && "${item['type']}" != 'check-button' ]] && return
 
     # Create an alias to call the menu's callback
     if [[ "${item['alias']}" != 'MENU.Null' ]] && [[ "${item['callback']}" != '' ]]; then
         if [ `alias | grep "alias ${item['alias']}=" | wc -l` != 0 ]; then
             MENU._warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
-            [[ "${MENUEX["build"]}" == "Release" ]] && return
+            [[ "${MENUEX['build']}" == 'Release' ]] && return
         fi
 
         # See Select command for the flags:                       show   1    2   mode
-        [[ "${item['type']}" == "radio-button" ]] && local flags="true false true false" || local flags="true false false current"
-        alias "${item['alias']}"="MENU._select $2 \"${item["name"]}\" $flags"
+        [[ "${item['type']}" == 'radio-button' ]] && local flags='true false true false' || local flags='true false false current'
+        alias "${item['alias']}"="MENU._select $2 \"${item['name']}\" $flags"
     fi
 }
 
@@ -481,28 +479,28 @@ MENU.AddDivider() {
 # -----------------------------------------------------------------------------
 MENU.Select() {
     if [[ $# -lt 2 ]]; then
-        MENU._error "MENU.Select requires more arguments"
+        MENU._error 'MENU.Select requires more arguments'
         return
     fi
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
     [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
 
     # We have to go through items[] first to check whether
     # the selected item is a check button type item
-    eval "${context["items"]}"
+    eval "${context['items']}"
     local check_button_set
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
-        if [[ "${item["name"]}" == $2 ]] && [[ "${item["type"]}" == "check-button" ]]; then
-            [[ "${item["checked"]}" == "on" ]] && item["checked"]="off" || item["checked"]="on"
+        if [[ "${item['name']}" == $2 ]] && [[ "${item['type']}" == 'check-button' ]]; then
+            [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
             items["$i"]=$(declare -p item)
-            context["items"]=$(declare -p items)
+            context['items']=$(declare -p items)
 
-            [ "$flagX" == "true" ] && context["checked"]=$2
-            MENU._log_info "CHECK BOX: '$2' state='${item["checked"]}'"
+            [ "$flagX" == 'true' ] && context['checked']=$2
+            MENU._log_info "CHECK BOX: '$2' state='${item['checked']}'"
 
             check_button_set='true'
             break
@@ -510,10 +508,10 @@ MENU.Select() {
     done
 
     # Set selected if the itme's type is the radio-button
-    [[ ! "$check_button_set" ]] && context["selected"]=$2
+    [[ ! "$check_button_set" ]] && context['selected']=$2
 
     map[$1]=$(declare -p context)
-    MENUEX["map"]=$(declare -p map)
+    MENUEX['map']=$(declare -p map)
 
     MENU._log_info "ARGS: $*"
 
@@ -525,7 +523,7 @@ MENU.Select() {
     # true/false whether to call the main menu's callback in addition
     [[ $# -gt 6 ]] && flag1=$7
 
-    if [ "$flagX" == "true" ]; then
+    if [ "$flagX" == 'true' ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
     fi
@@ -545,7 +543,7 @@ MENU._select() {
 
     MENU.Select $1 $2
 
-    if [ $# -gt 2 ] && [ "$3" == "true" ]; then
+    if [ $# -gt 2 ] && [ "$3" == 'true' ]; then
         MENU._separator $1
         MENU.Show $1 $f1 $f2 $mode
         MENU._separator $1
@@ -583,35 +581,35 @@ MENU.CheckButtonForAll() {
 
     MENU._log_info "ARGS: $*"
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$1"]}"
-    eval "${context["items"]}"
+    eval "${context['items']}"
 
     local changed='false'
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        [ "${item["type"]}" != "check-button" ] && continue;
+        [ "${item['type']}" != 'check-button' ] && continue;
 
         local updated='false'
         case $2 in
             check)
-                [ "${item["checked"]}" == "off" ] && item["checked"]="on"; updated='true'
+                [ "${item["checked"]}" == 'off' ] && item['checked']='on'; updated='true'
                 ;;
             uncheck)
-                [ "${item["checked"]}" == "on" ] && item["checked"]="off"; updated='true'
+                [ "${item["checked"]}" == 'on' ] && item['checked']='off'; updated='true'
                 ;;
             flip)
-                [ "${item["checked"]}" == "on" ] && item["checked"]="off" || item["checked"]="on"
+                [ "${item["checked"]}" == 'on' ] && item['checked']='off' || item['checked']='on'
                 updated='true'
                 ;;
         esac
-        [ "$updated" == 'true' ] && items["$i"]=$(declare -p item); context["items"]=$(declare -p items); changed='true'
+        [ "$updated" == 'true' ] && items["$i"]=$(declare -p item); context['items']=$(declare -p items); changed='true'
     done
 
     if [[ "$changed" == 'true' ]]; then
         map[$1]=$(declare -p context)
-        MENUEX["map"]=$(declare -p map)
+        MENUEX['map']=$(declare -p map)
     fi
 
     [[ $# -gt 2 ]] && show=$3 || show='false'
@@ -619,7 +617,7 @@ MENU.CheckButtonForAll() {
     [[ $# -gt 4 ]] && flag2=$5 || flag1='false'
     [[ $# -gt 5 ]] && mode=$6 || mode='false'
 
-    if [ "$show" == "true" ]; then
+    if [ "$show" == 'true' ]; then
         MENU.Show $1 $flag1 $flag2 $mode
     fi
 }
@@ -651,7 +649,7 @@ MENU.CheckButtonForAll() {
 # -----------------------------------------------------------------------------
 MENU.Show() {
     if [ $# -lt 1 ]; then
-        MENU._error "MENU.Show requires more arguments"
+        MENU._error 'MENU.Show requires more arguments'
         return
     fi
 
@@ -662,7 +660,7 @@ MENU.Show() {
     eval "${map["$1"]}"
     eval "${context['items']}"
 
-    if [ "${context['name']}" != "MENU.Null" ]; then
+    if [ "${context['name']}" != 'MENU.Null' ]; then
         printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']}"
     fi
 
@@ -671,9 +669,9 @@ MENU.Show() {
     local -a arguments=()
 
     # Store the main menu's callback to be called later
-    if [ "$2" == "true" ] && [ "${context['callback']}" != "MENU.Null" ]; then
+    if [ "$2" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
         callbacks[$idx]=${context['callback']}
-        [[ "${context['name']}" != "MENU.Null" ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
+        [[ "${context['name']}" != 'MENU.Null' ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
         idx=$(($idx + 1))
     fi
 
@@ -682,95 +680,89 @@ MENU.Show() {
 
         local name=${item['name']}
 
-        if [ "${context['align']}" == "by.largest.item" ]; then
+        if [ "${context['align']}" == 'by.largest.item' ]; then
             name=$(MENU._string_pad ${item['name']} ${context['item.length.max']})
         fi
 
         local type=${item['type']}
 
-        if [ "$type" == "ln-break" ]; then
-            printf "\n"
+        if [ "$type" == 'ln-break' ]; then
+            printf '\n'
             local pad=$(MENU._string_pad '' ${#context['name']})
             printf "     $pad"
             continue
         fi
 
-        if [ "$type" == "divider" ]; then
-            local divider=${context["divider"]}
+        if [ "$type" == 'divider' ]; then
+            local divider=${context['divider']}
             printf "$divider "
             continue;
         fi
 
-        if [ "$type" == "label" ]; then
+        if [ "$type" == 'label' ]; then
             printf "$name "
             continue;
         fi
 
-        local alias=${item["alias"]}
+        local alias=${item['alias']}
         local color_ref=${context['color']}
         local color=${styles["$color_ref"]}
-        local selected=${context["selected"]}
+        local selected=${context['selected']}
 
-#eval "${MENUEX['styles']}"
-#${styles['smul']}
-#${styles['rmul']}
-#${styles['bold']}
-#${styles['reset']}
-
-        if [ "$type" == "radio-button" ]; then
-            if [ "${item["name"]}" == "$selected" ]; then
-                local hi=${styles["smul"]}${item["alias"]}${styles["rmul"]}
-                printf "${color}${styles["bold"]}${context["radio.symbol.start"]}${context["radio.symbol"]}${context["radio.symbol.end"]} ${name/$alias/$hi}${styles["reset"]} "
+        if [ "$type" == 'radio-button' ]; then
+            if [ "${item['name']}" == "$selected" ]; then
+                local hi=${styles['smul']}${item['alias']}${styles['rmul']}
+                printf "${color}${styles['bold']}${context['radio.symbol.start']}${context['radio.symbol']}${context['radio.symbol.end']} ${name/$alias/$hi}${styles['reset']} "
 
                 # Store the radio button item's callback to be called later
-                if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
-                    callbacks[$idx]=${item["callback"]}
-                    arguments[$idx]="$1 ${item["name"]}"
+                if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
+                    callbacks[$idx]=${item['callback']}
+                    arguments[$idx]="$1 ${item['name']}"
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context["radio.symbol.start"]} ${context["radio.symbol.end"]} ${name/$alias/${smul}$alias${reset}} "
+                printf "${context['radio.symbol.start']} ${context['radio.symbol.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
             fi
             continue;
         fi
 
-        if [ "$type" == "check-button" ]; then
+        if [ "$type" == 'check-button' ]; then
             local mode=$4
-            if [ "${item["checked"]}" == "on" ]; then
-                local hi=${styles["smul"]}${item["alias"]}${rmul}
-                printf "${color}${bold}${context["check.symbol.start"]}${context["check.symbol"]}${context["check.symbol.end"]} ${name/$alias/$hi}${reset} "
-                if [ "$mode" == "checked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
-                    callbacks[$idx]=${item["callback"]}
-                    arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
+            if [ "${item['checked']}" == 'on' ]; then
+                local hi=${styles['smul']}${item['alias']}${styles['rmul']}
+                printf "${color}${styles['bold']}${context['check.symbol.start']}${context['check.symbol']}${context['check.symbol.end']} ${name/$alias/$hi}${styles['reset']} "
+                if [ "$mode" == 'checked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                    callbacks[$idx]=${item['callback']}
+                    arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context["check.symbol.start"]} ${context["check.symbol.end"]} ${name/$alias/${styles["smul"]}$alias${reset}} "
-                if [ "$mode" == "unchecked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
-                    callbacks[$idx]=${item["callback"]}
-                    arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
+                printf "${context['check.symbol.start']} ${context['check.symbol.end']} ${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                if [ "$mode" == 'unchecked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                    callbacks[$idx]=${item['callback']}
+                    arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     idx=$(($idx + 1))
                 fi
             fi
 
-            if [ "${context["checked"]}" == "${item["name"]}" ] && [ "$mode" == 'current' ] && [ "${context["callback"]}" != "MENU.Null" ]; then
-                callbacks[$idx]=${item["callback"]}
-                arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
+            if [ "${context['checked']}" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                callbacks[$idx]=${item['callback']}
+                arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                 idx=$(($idx + 1))
 
-                MENU._log_warning "mode: $mode context[checked]: ${context["checked"]}"
-                MENU._log_warning "${item["callback"]} ${item["name"]} ${item["checked"]}"
+                MENU._log_warning "mode: $mode context[checked]: ${context['checked']}"
+                MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
 
-                context["checked"]=''
+                context['checked']=''
 
                 map[$1]=$(declare -p context)
-                MENUEX["map"]=$(declare -p map)
+                MENUEX['map']=$(declare -p map)
             fi
 
             # Store all the check button item's callbacks to be called later
-            if [ "$mode" == "all" ] || [ "$mode" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
-                callbacks[$idx]=${item["callback"]}
-                arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
+            if [ "$mode" == 'all' ] || [ "$mode" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                callbacks[$idx]=${item['callback']}
+                arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                 idx=$(($idx + 1))
             fi
 
@@ -778,7 +770,7 @@ MENU.Show() {
         fi
     done
 
-    printf "\n"
+    printf '\n'
 
     # Last, call all the callbacks with its arguments that needs to be called
     for i in "${!callbacks[@]}"; do
@@ -810,15 +802,15 @@ MENU.ShowAll() {
     [[ $# -gt 3 ]] && mode=$4 || mode='false'
 
     local last_menu=''
-    if [ "$order" == "true" ]; then
-        eval "${MENUEX["order"]}"
+    if [ "$order" == 'true' ]; then
+        eval "${MENUEX['order']}"
         for i in "${!order[@]}"; do
             last_menu=${order[$i]}
             MENU._separator $last_menu true
             MENU.Show $last_menu $f1 $f2 $mode
         done
     else
-        eval "${MENUEX["map"]}"
+        eval "${MENUEX['map']}"
         for menu in "${!map[@]}"; do
             eval "${map["$menu"]}"
             last_menu=$menu
@@ -839,26 +831,26 @@ MENU.ShowAll() {
 # -----------------------------------------------------------------------------
 MENU._calculate_menu_width() {
     if [ $# -lt 1 ]; then
-        MENU._error "MENU._calculate_menu_width requires more arguments"
+        MENU._error 'MENU._calculate_menu_width requires more arguments'
         return
     fi
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$1"]}"
-    eval "${context["items"]}"
+    eval "${context['items']}"
 
     local max=0
     local length=0
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        local name=$(MENU._string_pad ${item["name"]} ${context["item.length.max"]})
+        local name=$(MENU._string_pad ${item['name']} ${context['item.length.max']})
         case ${item['type']} in
             check-button | radio-button)
-                ((length+=4)) # '[ ] ' or '( ) '
+                ((length += 4)) # '[ ] ' or '( ) '
                 ;;
             divider)
-                ((length+=1)) # ' '
+                ((length += 1)) # ' '
                 ;;
             ln-break)
                 [ $length -gt $max ] && max=$length
@@ -866,15 +858,16 @@ MENU._calculate_menu_width() {
                 ;;
         esac
 
-        ((length+=${#name}))
-        ((length+=1)) # ' ' after each item's name
+        ((length += ${#name}))
+        ((length += 1)) # ' ' after each item's name
     done
 
-    [ $max -gt 0 ] && local width=$max || local width=$length
+    local width=0
+    [ $max -gt 0 ] && width=$max || width=$length
 
-    if [[ "${context["name"]}" != "MENU.Null" ]]; then
-        ((width+=${#context["name"]}))
-        ((width+=4)) # ' * :'
+    if [[ "${context['name']}" != 'MENU.Null' ]]; then
+        ((width += ${#context['name']}))
+        ((width += 4)) # ' * :'
     fi
 
     echo $width
@@ -890,31 +883,31 @@ MENU._calculate_menu_width() {
 # -----------------------------------------------------------------------------
 MENU._separator() {
     if [ $# -lt 1 ]; then
-        MENU._error "MENU._separator requires more arguments"
+        MENU._error 'MENU._separator requires more arguments'
         return
     fi
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
-    local width=${context["menu.width"]}
+    local width=${context['menu.width']}
 
     if [[ $width -lt 1 ]]; then
         width=$(MENU._calculate_menu_width $1)
-        [[ $width -gt ${MENUEX["width"]} ]] && MENUEX["width"]=$width
+        [[ $width -gt ${MENUEX['width']} ]] && MENUEX['width']=$width
 
         MENU._log_warning "re-calc the width: $width"
 
-        context["menu.width"]=$width
+        context['menu.width']=$width
 
         map[$1]=$(declare -p context)
-        MENUEX["map"]=$(declare -p map)
+        MENUEX['map']=$(declare -p map)
     fi
 
-    [[ $# -gt 1 && "$2" == "true" ]] && width=${MENUEX["width"]}
+    [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width']}
 
-    if [ "${context["separator.show"]}" == "true" ]; then
-        cmd="printf -- '${context["separator.symbol"]}%.0s' {1..$width}"
+    if [ "${context['separator.show']}" == 'true' ]; then
+        cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
         eval $cmd
         echo ""
     fi
@@ -933,9 +926,11 @@ MENU._show() {
 
 MENU._debug_print() {
     eval "${map["$1"]}"
+    eval "${MENUEX['styles']}"
+
     echo "* $1:"
     for ctx_key in "${!context[@]}"; do
-        if [ "$ctx_key" == "items" ]; then
+        if [ "$ctx_key" == 'items' ]; then
             echo "  - [$ctx_key]:"
             eval "${context["$ctx_key"]}" # unpack: items variable
             for items_key in "${!items[@]}"; do
@@ -947,15 +942,15 @@ MENU._debug_print() {
                 #done
             done
         else
-            printf "  - [$ctx_key]: ${context["$ctx_key"]}${reset}\n"
+            printf "  - [$ctx_key]: ${context["$ctx_key"]}${styles['reset']}\n"
         fi
     done
 }
 
 MENU._debug_print_all() {
-    [[ "${MENUEX["build"]}" == "Release" ]] && return
+    [[ "${MENUEX['build']}" == 'Release' ]] && return
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     for key in "${!map[@]}"; do
         MENU._debug_print $key
     done
