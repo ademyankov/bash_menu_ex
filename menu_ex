@@ -75,12 +75,16 @@ MENU._to_upper() {
 #
 # -----------------------------------------------------------------------------
 MENU._log() {
+    if [ $# -lt 2 ]; then
+        echo ''
+        return
+    fi
     eval "${MENUEX['styles']}"
     local marker="${styles['green']}${styles['bold']}INFO${styles['reset']}:"
     [[ "$1" == 'WARNING' ]] && marker="${styles['yellow']}${styles['bold']}WARNING${styles['reset']}:"
     [[ "$1" == 'SEVERE' ]] && marker="${styles['red']}${styles['bold']}SEVERE${styles['reset']}:"
     shift
-    echo "${FUNCNAME[2]}: $marker $*"
+    echo ">${FUNCNAME[2]}: $marker $*"
 }
 
 MENU._log_info() {
@@ -391,9 +395,8 @@ MENU._add_item() {
             [[ "${MENUEX['build']}" == 'Release' ]] && return
         fi
 
-        # See Select command for the flags:                       show   1    2   mode
-        [[ "${item['type']}" == 'radio.button' ]] && local flags='true false true false' || local flags='true false false current'
-        alias "${item['alias']}"="MENU._select $2 \"${item['name']}\" $flags"
+        [[ "${item['type']}" == 'radio.button' ]] && local f2='true' || local f2='false'
+        alias "${item['alias']}"="MENU._select $2 \"${item['name']}\" $f2"
     fi
 }
 
@@ -491,7 +494,8 @@ MENU.Select() {
     eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
-    [[ $# -gt 2 ]] && flagX=$3 || flagX='false'
+    MENU._log_info "ARGS: $*"
+    [[ $# -gt 2 ]] && local show=$3 || local show='false'
 
     # We have to go through items[] first to check whether
     # the selected item is a check button type item
@@ -503,10 +507,8 @@ MENU.Select() {
             [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
             items["$i"]=$(declare -p item)
             context['items']=$(declare -p items)
-
-            [ "$flagX" == 'true' ] && context['tmp.checked']=$2
-            MENU._log_info "CHECK BOX: '$2' state='${item['checked']}'"
-
+            context['tmp.checked']=$2
+            MENU._log_info "CHECK BOX: '${context['tmp.checked']}' state='${item['checked']}'"
             check_button_set='true'
             break
         fi
@@ -518,8 +520,6 @@ MENU.Select() {
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 
-    MENU._log_info "ARGS: $*"
-
     [[ $# -gt 3 ]] && flag1=$4 || flag1='false'
     [[ $# -gt 4 ]] && flag2=$5 || flag2='false'
     [[ $# -gt 5 ]] && mode=$6 || mode='false'
@@ -528,7 +528,7 @@ MENU.Select() {
     # true/false whether to call the main menu's callback in addition
     [[ $# -gt 6 ]] && flag1=$7
 
-    if [ "$flagX" == 'true' ]; then
+    if [ "$show" == 'true' ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
     fi
@@ -538,21 +538,17 @@ MENU.Select() {
 MENU._select() {
     MENU._log_info "ARGS: $*"
 
-    [[ $# -gt 3 ]] && f1=$4 || f1='false'
-    [[ $# -gt 4 ]] && f2=$5 || f2='false'
-    [[ $# -gt 5 ]] && mode=$6 || mode='false'
+    [[ $# -gt 2 ]] && local f2=$3 || local f2='false'
 
     # an extra {true/false} might come from an alias argument
     # to call the main menu's callback
-    [[ $# -gt 6 ]] && f1=$7
+    [[ $# -gt 3 ]] && local f1=$4 || local f1='false'
 
     MENU.Select $1 "$2"
 
-    if [ $# -gt 2 ] && [ "$3" == 'true' ]; then
-        MENU._separator $1
-        MENU.Show $1 $f1 $f2 $mode
-        MENU._separator $1
-    fi
+    MENU._separator $1
+    MENU.Show $1 $f1 $f2 current
+    MENU._separator $1
 }
 
 # -----------------------------------------------------------------------------
@@ -761,7 +757,8 @@ MENU.Show() {
                 arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                 idx=$(($idx + 1))
 
-                MENU._log_warning "mode: $mode context[checked]: ${context['tmp.checked']}"
+                MENU._log ""
+                MENU._log_warning "mode: $mode context[tmp.checked]: ${context['tmp.checked']}"
                 MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
 
                 context['tmp.checked']=''
