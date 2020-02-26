@@ -17,50 +17,17 @@ unset MENUEX
 declare -A MENUEX=()
 
 # A map that holds all the menus created
-MENUEX["map"]="declare -A map=()"
+MENUEX['map']='declare -A map=()'
 
 # Calculated width of the entire menu
-MENUEX["width"]=0
+MENUEX['width']=0
 
 # Tracks the order of menus created
-MENUEX["order"]="declare -a order=()"
+MENUEX['order']='declare -a order=()'
 
-# Change to 'Debug' if logs are needed
-MENUEX["build"]='Release'
+# Change to 'Debug' if logs required
+MENUEX['build']='Release'
 # -----------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------------
-# All kinds of cool stuff for environment
-#
-# Num  Colour    define          R G B
-# 0    black     COLOR_BLACK     0,0,0
-# 1    red       COLOR_RED       1,0,0
-# 2    green     COLOR_GREEN     0,1,0
-# 3    yellow    COLOR_YELLOW    1,1,0
-# 4    blue      COLOR_BLUE      0,0,1
-# 5    magenta   COLOR_MAGENTA   1,0,1
-# 6    cyan      COLOR_CYAN      0,1,1
-# 7    white     COLOR_WHITE     1,1,1
-#
-# -----------------------------------------------------------------------------
-black=`tput setaf 0`
-red=`tput setaf 1`
-green=`tput setaf 2`
-yellow=`tput setaf 3`
-blue=`tput setaf 4`
-magenta=`tput setaf 5`
-cyan=`tput setaf 6`
-white=`tput setaf 7`
-
-reset=`tput sgr0`
-
-bold=`tput bold`  # Select bold mode
-dim=`tput dim`    # Select dim (half-bright) mode
-smul=`tput smul`  # Enable underline mode
-rmul=`tput rmul`  # Disable underline mode
-smso=`tput smso`  # Enter standout (bold) mode
-rmso=`tput rmso`  # Exit standout mode
-rev=`tput rev`    # Turn on reverse video mode
 
 # -----------------------------------------------------------------------------
 #
@@ -114,19 +81,20 @@ MENU._to_upper() {
 #
 # -----------------------------------------------------------------------------
 MENU._log() {
-    local marker="${green}${bold}INFO${reset}:"
-    [[ "$1" == "WARNING" ]] && marker="${yellow}${bold}WARNING${reset}:"
-    [[ "$1" == "SEVERE" ]] && marker="${red}${bold}SEVERE${reset}:"
+    eval "${MENUEX['styles']}"
+    local marker="${styles['green']}${styles['bold']}INFO${styles['reset']}:"
+    [[ "$1" == 'WARNING' ]] && marker="${styles['yellow']}${styles['bold']}WARNING${styles['reset']}:"
+    [[ "$1" == 'SEVERE' ]] && marker="${styles['red']}${styles['bold']}SEVERE${styles['reset']}:"
     shift
     echo "${FUNCNAME[2]}: $marker $*"
 }
 
 MENU._log_info() {
-    [[ "${MENUEX["build"]}" == "Debug" ]] && MENU._log INFO $1
+    [[ "${MENUEX["build"]}" == 'Debug' ]] && MENU._log INFO $1
 }
 
 MENU._log_warning() {
-    [[ "${MENUEX["build"]}" == "Debug" ]] && MENU._log WARNING $1
+    [[ "${MENUEX["build"]}" == 'Debug' ]] && MENU._log WARNING $1
 }
 
 MENU._error() {
@@ -161,45 +129,86 @@ MENU.Create() {
     fi
 
     local -A context=()
-    context["name"]='MENU.Null'
-    context["alias"]='MENU.Null'
-    context["callback"]='MENU.Null'
-    context["checked"]=''
-    context["selected"]=''
-    context["item.length.max"]=0   # the max char length of an item's name
-    context["menu.width"]=0     # the length of the longest string in the menu (used for menu's separator)
-    context["name"]=$2
+    context['name']='MENU.Null'
+    context['alias']='MENU.Null'
+    context['callback']='MENU.Null'
+    context['checked']=''
+    context['selected']=''
+    context['item.length.max']=0   # the max char length of an item's name
+    context['menu.width']=0     # the length of the longest string in the menu (used for menu's separator)
+    context['name']=$2
 
     MENU._log_info "args: $*"
 
-    [ $# -gt 2 ] && context["alias"]=$3
-    [ $# -gt 3 ] && context["callback"]=$4
+    [ $# -gt 2 ] && context['alias']=$3
+    [ $# -gt 3 ] && context['callback']=$4
 
     local -a items=()
-    context["items"]=$(declare -p items)
+    context['items']=$(declare -p items)
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
     map[$1]=$(declare -p context)
-    MENUEX["map"]=$(declare -p map)
+    MENUEX['map']=$(declare -p map)
 
     eval "${MENUEX["order"]}"
     order[${#order[@]}]=$1
-    MENUEX["order"]=$(declare -p order)
+    MENUEX['order']=$(declare -p order)
 
-    local default="MENU.SetStyle $1"
-    ${default}
+    local func="MENU.SetStyle $1"
+    ${func}
 
-    default="MENU.SetStyleEx $1"
-    ${default}
+    func="MENU.SetStyleEx $1"
+    ${func}
+
+    func="MENU._fill_styles_table"
+    ${func}
 
     # Create an alias to display the menu
     if [ "${context['alias']}" != '' ]; then
         if [ `alias | grep "alias ${context['alias']}=" | wc -l` != 0 ]; then
             MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
-            [ "${MENUEX["build"]}" == "Release" ] && return
+            [ "${MENUEX['build']}" == "Release" ] && return
         fi
-        local argc="$1 ${context["name"]} ${context["alias"]} ${context["callback"]}"
+        local argc="$1 ${context['name']} ${context['alias']} ${context['callback']}"
         alias "${context['alias']}"="MENU._show ${argc}"
+    fi
+}
+
+MENU._fill_styles_table() {
+    if [[ ! ${MENUEX["styles"]} ]]; then
+        echo 'styles...'
+
+        # Num  Colour    define          R G B
+        # 0    black     COLOR_BLACK     0,0,0
+        # 1    red       COLOR_RED       1,0,0
+        # 2    green     COLOR_GREEN     0,1,0
+        # 3    yellow    COLOR_YELLOW    1,1,0
+        # 4    blue      COLOR_BLUE      0,0,1
+        # 5    magenta   COLOR_MAGENTA   1,0,1
+        # 6    cyan      COLOR_CYAN      0,1,1
+        # 7    white     COLOR_WHITE     1,1,1
+
+        local -A styles=()
+        styles['green']=`tput setaf 0`
+        styles['red']=`tput setaf 1`
+        styles['green']=`tput setaf 2`
+        styles['yellow']=`tput setaf 3`
+        styles['blue']=`tput setaf 4`
+        styles['magenta']=`tput setaf 5`
+        styles['cyan']=`tput setaf 6`
+        styles['white']=`tput setaf 7`
+
+        styles['reset']=`tput sgr0`
+
+        styles['bold']=`tput bold`  # Select bold mode
+        styles['dim']=`tput dim`    # Select dim (half-bright) mode
+        styles['smul']=`tput smul`  # Enable underline mode
+        styles['rmul']=`tput rmul`  # Disable underline mode
+        styles['smso']=`tput smso`  # Enter standout (bold) mode
+        styles['rmso']=`tput rmso`  # Exit standout mode
+        styles['rev']=`tput rev`    # Turn on reverse video mode
+
+        MENUEX["styles"]=$(declare -p styles)
     fi
 }
 
@@ -237,7 +246,8 @@ MENU.SetStyle() {
     # By default
     context["divider"]='|'
     context["align"]='none'
-    context["color"]=${green}
+    #context["color"]=${green}
+    context["color"]='green'
     context["radio.symbol"]='♦'
     context["check.symbol"]='x'
 
@@ -647,12 +657,13 @@ MENU.Show() {
 
     MENU._log_info "ARGS: $*"
 
-    eval "${MENUEX["map"]}"
+    eval "${MENUEX['map']}"
+    eval "${MENUEX['styles']}"
     eval "${map["$1"]}"
-    eval "${context["items"]}"
+    eval "${context['items']}"
 
-    if [ "${context["name"]}" != "MENU.Null" ]; then
-        printf "${context["name.header"]}${context['name']/${context['alias']}/${smul}${context['alias']}${reset}}${context["name.footer"]}"
+    if [ "${context['name']}" != "MENU.Null" ]; then
+        printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']}"
     fi
 
     local idx=0
@@ -660,22 +671,22 @@ MENU.Show() {
     local -a arguments=()
 
     # Store the main menu's callback to be called later
-    if [ "$2" == "true" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
-        callbacks[$idx]=${context["callback"]}
-        [[ "${context["name"]}" != "MENU.Null" ]] && arguments[$idx]+="$1 ${context["name"]}" || arguments[$idx]="$1"
+    if [ "$2" == "true" ] && [ "${context['callback']}" != "MENU.Null" ]; then
+        callbacks[$idx]=${context['callback']}
+        [[ "${context['name']}" != "MENU.Null" ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
         idx=$(($idx + 1))
     fi
 
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
 
-        local name=${item["name"]}
+        local name=${item['name']}
 
-        if [ "${context["align"]}" == "by.largest.item" ]; then
-            name=$(MENU._string_pad ${item["name"]} ${context["item.length.max"]})
+        if [ "${context['align']}" == "by.largest.item" ]; then
+            name=$(MENU._string_pad ${item['name']} ${context['item.length.max']})
         fi
 
-        local type=${item["type"]}
+        local type=${item['type']}
 
         if [ "$type" == "ln-break" ]; then
             printf "\n"
@@ -696,13 +707,20 @@ MENU.Show() {
         fi
 
         local alias=${item["alias"]}
-        local color=${context["color"]}
+        local color_ref=${context['color']}
+        local color=${styles["$color_ref"]}
         local selected=${context["selected"]}
+
+#eval "${MENUEX['styles']}"
+#${styles['smul']}
+#${styles['rmul']}
+#${styles['bold']}
+#${styles['reset']}
 
         if [ "$type" == "radio-button" ]; then
             if [ "${item["name"]}" == "$selected" ]; then
-                local hi=${smul}${item["alias"]}${rmul}
-                printf "${color}${bold}${context["radio.symbol.start"]}${context["radio.symbol"]}${context["radio.symbol.end"]} ${name/$alias/$hi}${reset} "
+                local hi=${styles["smul"]}${item["alias"]}${styles["rmul"]}
+                printf "${color}${styles["bold"]}${context["radio.symbol.start"]}${context["radio.symbol"]}${context["radio.symbol.end"]} ${name/$alias/$hi}${styles["reset"]} "
 
                 # Store the radio button item's callback to be called later
                 if [ "$3" == "true" ] && [ "${item["callback"]}" != "MENU.Null" ]; then
@@ -719,7 +737,7 @@ MENU.Show() {
         if [ "$type" == "check-button" ]; then
             local mode=$4
             if [ "${item["checked"]}" == "on" ]; then
-                local hi=${smul}${item["alias"]}${rmul}
+                local hi=${styles["smul"]}${item["alias"]}${rmul}
                 printf "${color}${bold}${context["check.symbol.start"]}${context["check.symbol"]}${context["check.symbol.end"]} ${name/$alias/$hi}${reset} "
                 if [ "$mode" == "checked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
@@ -727,7 +745,7 @@ MENU.Show() {
                     idx=$(($idx + 1))
                 fi
             else
-                printf "${context["check.symbol.start"]} ${context["check.symbol.end"]} ${name/$alias/${smul}$alias${reset}} "
+                printf "${context["check.symbol.start"]} ${context["check.symbol.end"]} ${name/$alias/${styles["smul"]}$alias${reset}} "
                 if [ "$mode" == "unchecked" ] && [ "${context["callback"]}" != "MENU.Null" ]; then
                     callbacks[$idx]=${item["callback"]}
                     arguments[$idx]="$1 ${item["name"]} ${item["checked"]}"
@@ -949,10 +967,7 @@ MENU._debug_print_all() {
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-alias demo='MENU.Demo'
-alias dev='MENU.ShowAll true'
-
-MENU.Demo() {
+MENU.CreateDemo() {
     null='MENU.Null'
 
     #
@@ -1071,11 +1086,11 @@ MENU.Demo() {
     # -----------------------------------------------------------------------------------------------------------------
     # Show/display the menu
     #
-    #         handle                - a name/handle of the menu to be used w/ the API
-    #           |   flag1           - whether to call the main menu's callback
-    #           |     |  flag2      - whether to call the selected radio button item's callback
-    #           |     |    |  mode  - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
-    MENU.Show pl_menu true true all
+    #           handle                - a name/handle of the menu to be used w/ the API
+    #             |   flag1           - whether to call the main menu's callback
+    #             |     |  flag2      - whether to call the selected radio button item's callback
+    #             |     |    |   mode - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
+    #MENU.Show pl_menu true true all
 
     #
     # mode:
@@ -1110,7 +1125,7 @@ MENU.Demo() {
     MENU.Select build_menu Debug false
     MENU.Select build_menu Wall false
     MENU.Select build_menu Werror false
-    MENU.Show build_menu true true all
+    #MENU.Show build_menu true true all
 
     #
     # Demo menu 'LOGS'
@@ -1129,7 +1144,7 @@ MENU.Demo() {
     MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
     MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
     MENU.Select logs_menu INFO false
-    MENU.Show logs_menu true true
+    #MENU.Show logs_menu true true
 
     MENU._debug_print_all
 }
@@ -1244,9 +1259,8 @@ MENU.DemoLogsCb() {
 
 # -----------------------------------------------------------------------------------------------------------------
 
-demo
+MENU.CreateDemo
+alias dev='MENU.ShowAll true'
 
-#
 # run 'dev' alias to see all the demo menus
-# > dev
-#
+dev
