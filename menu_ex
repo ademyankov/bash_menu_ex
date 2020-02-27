@@ -208,7 +208,7 @@ MENU._ctor() {
         MENUEX['styles']=$(declare -p styles)
 
         # Calculated width of the entire menu
-        MENUEX['width']=0
+        MENUEX['width.max']=0
 
         # Tracks the order of menus created
         MENUEX['order']='declare -a order=()'
@@ -313,14 +313,6 @@ MENU.SetStyleEx() {
     [[ $# -gt 7 && "$8" != 'default' ]] && context['check.button.bracket.start']=$8
     [[ $# -gt 8 && "$9" != 'default' ]] && context['check.button.bracket.end']=$9
 
-    #if [ "${context['name']}" != 'MENU.Null' ]; then
-    #    local length=${#context['name']}
-    #    ((length += ${#context['name.header']}))
-    #    ((length += ${#context['name.footer']}))
-    #    ((length += 1)) # one space ' ' after the menu's name
-    #    context['menu.width']=$length
-    #fi
-
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 }
@@ -362,26 +354,6 @@ MENU._add_item() {
 
     # Used for 'by.largest.item' alignment since we need to know what item's length is the longest one
     [[ ${context['item.length.max']} -lt ${#item['name']} ]] && context['item.length.max']=${#item['name']}
-
-    # Calculate the width of the menu only if it's a simple alignment mode;
-    # because in case of 'by-largest' alignment we cannot accuratelly calculate
-    # the width until all the items have been added into the menu
-    #if [ "${context['align']}" != 'by.largest.item' ]; then
-    #    local item_width=${#item['name']}
-    #    if [[ "${item['type']}" == 'divider' ]]; then
-    #        ((item_width += ${#context['divider']}))
-    #    elif [[ "${item['type']}" == 'check.button' || "${item['type']}" == 'radio.button' ]]; then
-    #        ((item_width += 4)) # '[ ] '
-    #    fi
-    #    ((item_width += 1)) # ' ' after each item's name
-    #    ((context['menu.width']+=$item_width))
-    #else
-    #    # Will trigger to re-calculate again the menu's width in case an item is added
-    #    # after the 'menu.width' was calculated the first time
-    #    context['menu.width']=0
-    #fi
-
-    #[[ ${context['menu.width']} -gt ${MENUEX['width']} ]] && MENUEX['width']=${context['menu.width']}
 
     map[$2]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
@@ -673,7 +645,7 @@ MENU.Show() {
     if [ "$2" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
         callbacks[$idx]=${context['callback']}
         [[ "${context['name']}" != 'MENU.Null' ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
-        idx=$(($idx + 1))
+        ((idx++))
     fi
 
     # The number of spaces needed to cover the radio/check.button symbol for example: [' '] one space
@@ -737,7 +709,7 @@ MENU.Show() {
                 if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']}"
-                    idx=$(($idx + 1))
+                    ((idx++))
                 fi
             else
                 # '( ) Name '
@@ -759,7 +731,7 @@ MENU.Show() {
                 if [ "$mode" == 'checked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
-                    idx=$(($idx + 1))
+                    ((idx++))
                 fi
             else
                 # '[ ] Name '
@@ -769,14 +741,14 @@ MENU.Show() {
                 if [ "$mode" == 'unchecked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
-                    idx=$(($idx + 1))
+                    ((idx++))
                 fi
             fi
 
             if [ "${context['tmp.checked']}" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                 callbacks[$idx]=${item['callback']}
                 arguments[$idx]="$1 ${item['name']} ${item['checked']}"
-                idx=$(($idx + 1))
+                ((idx++))
 
                 MENU._log ""
                 MENU._log_warning "mode: $mode context[tmp.checked]: ${context['tmp.checked']}"
@@ -792,7 +764,7 @@ MENU.Show() {
             if [ "$mode" == 'all' ] || [ "$mode" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                 callbacks[$idx]=${item['callback']}
                 arguments[$idx]="$1 ${item['name']} ${item['checked']}"
-                idx=$(($idx + 1))
+                ((idx++))
             fi
 
             continue;
@@ -851,7 +823,7 @@ MENU.ShowAll() {
 }
 
 # -----------------------------------------------------------------------------
-# It's quite tricky to calculate accuratelly the menu's length because of such
+# The lenght of the separator needs to be dynamically calculated because of such
 # factors as ln.break, alignment, and customizable chars for the radio/check
 # buttons
 #
@@ -937,7 +909,7 @@ MENU._separator() {
 
     if [[ $width -lt 1 ]]; then
         width=$(MENU._calculate_menu_width $1)
-        [[ $width -gt ${MENUEX['width']} ]] && MENUEX['width']=$width
+        [[ $width -gt ${MENUEX['width.max']} ]] && MENUEX['width.max']=$width
 
         MENU._log_warning "re-calc the width: $width"
 
@@ -947,7 +919,7 @@ MENU._separator() {
         MENUEX['map']=$(declare -p map)
     fi
 
-    [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width']}
+    [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width.max']}
 
     if [ "${context['separator.show']}" == 'true' ]; then
         ((width--)) # compensation because printf already prints out one 'separator' symbol
@@ -1050,7 +1022,7 @@ MENU.CreateDemo() {
     # 5 [OPT]       |      |           |            |  symbol1       - the select symbol for the radio button when selected
     # 6 [OPT]       |      |           |            |   |  symbol2 - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default by.largest.item red '○' default
-    MENU.SetStyle pl_menu default by.largest.item
+    #MENU.SetStyle pl_menu default by.largest.item
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -1106,8 +1078,8 @@ MENU.CreateDemo() {
     MENU.AddLabel pl_menu QEMU:
     MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
     MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
-    MENU.AddDivider pl_menu
-    MENU.AddRadioButton pl_menu "Name w/ space" ace MENU.DemoPlQemuCb
+    #MENU.AddDivider pl_menu
+    #MENU.AddRadioButton pl_menu "Name w/ space" ace MENU.DemoPlQemuCb
 
     # -----------------------------------------------------------------------------------------------------------------
     # Select an item of the menu
