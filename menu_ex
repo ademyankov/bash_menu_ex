@@ -349,9 +349,9 @@ MENU.AddMenu() {
     eval "${context['sub.menus']}"
     submenus[${#submenus[@]}]=$2
 
-
-
+    context['parent.menu']=$1
     context['sub.menus']=$(declare -p submenus)
+
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 }
@@ -676,8 +676,11 @@ MENU.Show() {
         return
     fi
 
-    local flag=0
     while true; do
+        eval "${context['sub.menus']}"
+        local sub_menu_count=$((${#submenus[@]} - 1))
+        local sub_menu_index=0
+
         eval "${context['items']}"
 
         if [ "${context['name']}" != 'MENU.Null' ]; then
@@ -818,11 +821,8 @@ MENU.Show() {
             fi
         done
 
-        if [ $flag -gt 0 ]; then break; fi
-
-        eval "${context['sub.menus']}"
-        if [ ${#submenus[@]} -ne 0 ]; then
-            local subname=${submenus[0]}
+        if [ $sub_menu_count -gt 0 ] && [ $sub_menu_index -lt $sub_menu_count ]; then
+            local subname=${submenus["$sub_menu_index"]}
             #MENU._log_warning "Sub-menu: '$subname' processing..."
 
             eval "${map["$subname"]}"
@@ -832,7 +832,9 @@ MENU.Show() {
                 MENU._log_error "Not a sub-menu! Cannot process further."
                 return
             fi
-            ((flag++))
+
+            ((sub_menu_index++))
+
             continue;
         fi
 

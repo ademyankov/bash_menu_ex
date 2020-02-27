@@ -127,7 +127,10 @@ MENU.CreateDemo() {
     # -----------------------------------------------------------------------------------------------------------------
 
 
-    MENU.Create extra1 Extra xtra MENU.DemoMainMenu
+    MENU.Create extra1
+    MENU.SetStyleEx extra1 false '-' '' ''
+
+    MENU.AddLabel extra1 SubMenu:
     MENU.AddRadioButton extra1 Item1 m1 MENU.DemoBuildChange
     MENU.AddRadioButton extra1 Item2 m2 MENU.DemoBuildChange
     MENU.AddRadioButton extra1 Item3 m3 MENU.DemoBuildChange
