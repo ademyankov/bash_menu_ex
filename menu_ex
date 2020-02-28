@@ -727,6 +727,7 @@ MENU.Show() {
     eval "${context['sub.menus']}"
     local parent_sub_menus=("${submenus[@]}")
     local sub_menu_count=$((${#submenus[@]}))
+    local is_parent_ln_break=${context['is.ln.break.last']}
     local sub_menu_index=0
 
     local has_sub_menu='false'
@@ -757,7 +758,6 @@ MENU.Show() {
             eval "${items["$i"]}"
 
             local name=${item['name']}
-
             if [ "${context['align']}" == 'by.largest.item' ] && [ "${item['type']}" != 'label' ]; then
                 local sz=${context['item.length.max']}
                 ((sz -= ${#item['name']}))
@@ -766,7 +766,6 @@ MENU.Show() {
             fi
 
             local type=${item['type']}
-
             if [ "$type" == 'ln.break' ]; then
                 printf '\n'
                 if [ "${context['name']}" != 'MENU.Null' ] || [ "${context['is.sub.menu']}" == 'true' ]; then
@@ -869,6 +868,9 @@ MENU.Show() {
         # if parent has sub-menus then unpack sub menu each by each and print it all
         if [ "$has_sub_menu" == 'true' ]; then
             if [[ $sub_menu_count -gt $sub_menu_index ]]; then
+                if [ "$is_parent_ln_break" == 'true' ] && [ $sub_menu_index -gt 0 ]; then
+                    printf "\n$parent_header_pad"
+                fi
                 local subname=${parent_sub_menus["$sub_menu_index"]}
                 eval "${map["$subname"]}"
                 ((sub_menu_index++))

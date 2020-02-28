@@ -134,7 +134,7 @@ DEMO.Create() {
     MENU.AddRadioButton pl_sub_menu Item2 m2 DEMO.PlSubMenuRadioCallback
     MENU.AddRadioButton pl_sub_menu Item3 m3 DEMO.PlSubMenuRadioCallback
 
-    MENU.AddLnBreak pl_sub_menu
+    #MENU.AddLnBreak pl_sub_menu
     MENU.AddDivider pl_sub_menu
     MENU.AddLabel pl_sub_menu Mode:
     MENU.AddCheckButton pl_sub_menu Ps1 s1 DEMO.PlSubMenuCheckCallback
