@@ -134,7 +134,9 @@ MENU.Create() {
     context['selected']=''          # curently selected radio.button
     context['item.length.max']=0    # the max char length of an item's name
     context['menu.width']=0         # the length of the longest string in the menu (used for menu's separator)
-    context['sub.menus']=$(declare -p submenus)
+    context['sub.menus']='declare -a submenus=()'
+    context['is.sub.menu']='false'
+    context['parent.menu']=''
 
     MENU._log_info "args: $*"
 
@@ -337,6 +339,8 @@ MENU.AddMenu() {
     fi
 
     context['is.sub.menu']=true
+    context['parent.menu']=$1
+
     map[$2]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 
@@ -347,9 +351,8 @@ MENU.AddMenu() {
     fi
 
     eval "${context['sub.menus']}"
-    submenus[${#submenus[@]}]=$2
+    submenus["${#submenus[@]}"]=$2
 
-    context['parent.menu']=$1
     context['sub.menus']=$(declare -p submenus)
 
     map[$1]=$(declare -p context)
@@ -672,24 +675,26 @@ MENU.Show() {
     eval "${map["$1"]}"
 
     if [ "${context['is.sub.menu']}" == 'true' ]; then
-        MENU._log_warning "Sub-menu. Do not show!"
-        return
+        local parent=${context['parent.menu']}
+        MENU._log_warning "'$1' is a sub menu. Show the parent '$parent' menu instead"
+        eval "${map["$parent"]}"
     fi
+
+    local -a callbacks=()
+    local -a arguments=()
 
     while true; do
         eval "${context['sub.menus']}"
-        local sub_menu_count=$((${#submenus[@]} - 1))
-        local sub_menu_index=0
-
         eval "${context['items']}"
+
+        local sub_menu_count=$((${#submenus[@]}))
+        local sub_menu_index=0
 
         if [ "${context['name']}" != 'MENU.Null' ]; then
             printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']} "
         fi
 
         local idx=0
-        local -a callbacks=()
-        local -a arguments=()
 
         # Store the main menu's callback to be called later
         if [ "$2" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
@@ -877,6 +882,11 @@ MENU.ShowAll() {
         eval "${MENUEX['order']}"
         for i in "${!order[@]}"; do
             last_menu=${order[$i]}
+
+            eval "${MENUEX['map']}"
+            eval "${map["$last_menu"]}"
+            [ "${context['is.sub.menu']}" == 'true' ] && continue
+
             MENU._separator $last_menu true
             MENU.Show $last_menu $f1 $f2 $mode
         done
@@ -884,6 +894,9 @@ MENU.ShowAll() {
         eval "${MENUEX['map']}"
         for menu in "${!map[@]}"; do
             eval "${map["$menu"]}"
+
+            [ "${context['is.sub.menu']}" == 'true' ] && continue
+
             last_menu=$menu
             MENU._separator $menu true
             MENU.Show $menu $f1 $f2 $mode

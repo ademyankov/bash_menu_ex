@@ -126,18 +126,17 @@ MENU.CreateDemo() {
     MENU.Select pl_menu rpi3 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
+    MENU.Create pl_sub_menu
+    MENU.SetStyleEx pl_sub_menu false '-' '' ''
 
-    MENU.Create extra1
-    MENU.SetStyleEx extra1 false '-' '' ''
-
-    MENU.AddLabel extra1 SubMenu:
-    MENU.AddRadioButton extra1 Item1 m1 MENU.DemoBuildChange
-    MENU.AddRadioButton extra1 Item2 m2 MENU.DemoBuildChange
-    MENU.AddRadioButton extra1 Item3 m3 MENU.DemoBuildChange
-    MENU.Select extra1 Item2 false
+    MENU.AddLabel pl_sub_menu SubMenu:
+    MENU.AddRadioButton pl_sub_menu Item1 m1 MENU.DemoSubChange
+    MENU.AddRadioButton pl_sub_menu Item2 m2 MENU.DemoSubChange
+    MENU.AddRadioButton pl_sub_menu Item3 m3 MENU.DemoSubChange
+    MENU.Select pl_sub_menu Item2 false
 
     MENU.AddDivider pl_menu
-    MENU.AddMenu pl_menu extra1
+    MENU.AddMenu pl_menu pl_sub_menu
 
     # -----------------------------------------------------------------------------------------------------------------
     # Show/display the menu
@@ -157,6 +156,11 @@ MENU.CreateDemo() {
     #  unchecked    - call all the callbacks for all un-checked check button items
     #
     # -----------------------------------------------------------------------------------------------------------------
+    MENU._debug_print_all
+}
+
+fooo()
+{
     :'
     MENU.Create build_menu Build Build MENU.DemoMainMenu
 
@@ -204,7 +208,6 @@ MENU.CreateDemo() {
     MENU.Select logs_menu INFO false
     #MENU.Show logs_menu true true
     '
-    MENU._debug_print_all
 }
 
 # -----------------------------------------------------------------------------------------------------------------
@@ -214,7 +217,7 @@ MENU.CreateDemo() {
 # [IN] handle - the menu's name/handle
 # [IN] name   - the menu's name (if specified)
 MENU.DemoMainMenu() {
-    MENU._separator $1
+    #MENU._separator $1
     echo " $2.Callback..."
     echo ' ...'
 }
@@ -223,7 +226,7 @@ MENU.DemoMainMenu() {
 # [IN]      name   - the name of the selected item
 # [IN][OPT] state  - {on, off} item's state (check.button type only)
 MENU.DemoPlQemuCb() {
-    MENU._separator $1
+    #MENU._separator $1
     echo " PL.Qemu.$2.Callback..."
     echo ' ...'
 }
@@ -233,19 +236,25 @@ MENU.DemoPlLinuxCb() {
         MENU._error "Wrong callback!"
         return
     fi
-    MENU._separator $1
+    #MENU._separator $1
     echo " PL.Linux.Callback..."
     echo ' ...'
 }
 
 MENU.DemoPlRpi3Cb() {
-    MENU._separator $1
+    #MENU._separator $1
     echo " PL.$2.Callback..."
     echo ' ...'
 }
 
+MENU.DemoSubChange() {
+    #MENU._separator $1
+    echo " PLATFORM.SUB-MENU.$2.Callback..."
+    echo ' ...'
+}
+
 MENU.DemoBuildChange() {
-    MENU._separator $1
+    #MENU._separator $1
     echo " Build.$2.Callback..."
 
     case $2 in
@@ -260,7 +269,7 @@ MENU.DemoBuildChange() {
 }
 
 MENU.DemoBuildGccFlags() {
-    MENU._separator $1
+    #MENU._separator $1
     echo " PL.$2.state.[$3].Callback..."
 
     case $2 in
@@ -284,7 +293,7 @@ MENU.DemoBuildGccFlags() {
 }
 
 MENU.DemoLogsCb() {
-    MENU._separator $1
+    #MENU._separator $1
     echo " LOGS.$2.Callback..."
 
     case $2 in
