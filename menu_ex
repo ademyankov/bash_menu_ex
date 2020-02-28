@@ -319,13 +319,16 @@ MENU.SetStyleEx() {
 }
 
 # -----------------------------------------------------------------------------
-# Insert a menu, as a sub-menu, into the current menu
+# Insert a menu, as a sub (child) menu
 #
-# [IN] name - name of the menu
-# [IN] sub  - a menu to be a sub-menu for the 'name' menu
+# [IN] parent - name of the main (parent) menu
+# [IN] child  - a menu to serve as a sub (child) menu for the parent menu
 #
-# Remark: When menu 'sub' becomes a sub menu it will clear those fields:
-#   'name', name's header and footer, and 'alias' will be un-set
+# Remark: When a menu becomes a child menu it style changes automatically and
+# it will loose some of its properties, like 'name', 'header', 'footer', and
+# the main menu's 'alias'
+#
+#
 #
 # -----------------------------------------------------------------------------
 MENU.AddMenu() {
@@ -335,6 +338,12 @@ MENU.AddMenu() {
     fi
 
     eval "${MENUEX['map']}"
+
+    eval "${map["$1"]}"
+    if [[ "${context['is.sub.menu']}" == "true" ]]; then
+        MENU._error "Nesting is not supported! 'parent' ['$1'] is a child menu itself."
+        return
+    fi
 
     eval "${map["$2"]}"
     if [ ${#context[@]} -eq 0 ]; then
