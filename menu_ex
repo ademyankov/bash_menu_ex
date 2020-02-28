@@ -529,7 +529,12 @@ MENU.Select() {
     done
 
     # Set selected if the itme's type is the radio.button
-    [[ ! "$check_button_set" ]] && context['selected']=$2
+    if [[ ! "$check_button_set" ]]; then
+        # current_item is used for a trick to call only one callback of the selected
+        # radio button and not all the callbacks of all radio buttons in case of sub menus
+        current_item="$2"
+        context['selected']=$2
+    fi
 
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
@@ -545,6 +550,7 @@ MENU.Select() {
     if [ "$show" == 'true' ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
+        unset current_item
     fi
 }
 
@@ -563,6 +569,7 @@ MENU._select() {
     MENU._separator $1
     MENU.Show $1 $f1 $f2 current
     MENU._separator $1
+    unset current_item
 }
 
 # -----------------------------------------------------------------------------
@@ -682,6 +689,7 @@ MENU.Show() {
 
     local -a callbacks=()
     local -a arguments=()
+    local idx=0
 
     while true; do
         eval "${context['sub.menus']}"
@@ -693,8 +701,6 @@ MENU.Show() {
         if [ "${context['name']}" != 'MENU.Null' ]; then
             printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']} "
         fi
-
-        local idx=0
 
         # Store the main menu's callback to be called later
         if [ "$2" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
@@ -762,9 +768,11 @@ MENU.Show() {
 
                     # Store the radio button item's callback to be called later
                     if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
-                        callbacks[$idx]=${item['callback']}
-                        arguments[$idx]="$1 ${item['name']}"
-                        ((idx++))
+                        if [ ! $current_item ] || [ "$current_item" == "${item['name']}" ]; then
+                            callbacks[$idx]=${item['callback']}
+                            arguments[$idx]="$1 ${item['name']}"
+                            ((idx++))
+                        fi
                     fi
                 else
                     # '( ) Name '

@@ -10,7 +10,7 @@ source ./menu_ex
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
-MENU.CreateDemo() {
+DEMO.Create() {
     null='MENU.Null'
 
     #
@@ -24,7 +24,7 @@ MENU.CreateDemo() {
     # 2 [OPT]       |     name               - a displayed name of the menu
     # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
     # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
-    MENU.Create pl_menu PLATFORM PL MENU.DemoMainMenu
+    MENU.Create pl_menu PLATFORM PL DEMO.MainMenuCallback
     #MENU.Create pl_menu $null PL MENU.DemoMainMenu
     #MENU.Create pl_menu $null $null MENU.DemoMainMenu
     #MENU.Create pl_menu
@@ -84,7 +84,7 @@ MENU.CreateDemo() {
     # 2                 |    name               - an item's name to be added into the menu
     # 3 [OPT]           |     |    alias        - an alias to be created that triggers the item's callback
     # 4 [OPT]           |     |     |  callback - a function to be called when an item is selected
-    MENU.AddRadioButton pl_menu Linux nux MENU.DemoPlLinuxCb
+    MENU.AddRadioButton pl_menu Linux nux DEMO.PlLinuxCallback
     #MENU.AddRadioButton pl_menu Linux $null MENU.DemoPlLinuxCb
     #MENU.AddRadioButton pl_menu Linux
     #
@@ -105,12 +105,12 @@ MENU.CreateDemo() {
     # > nux true all - all the above + triggers all the check button item's callbacks (if any)
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.AddRadioButton pl_menu rpi3 pi3 MENU.DemoPlRpi3Cb
+    MENU.AddRadioButton pl_menu rpi3 pi3 DEMO.PlRpi3Callback
     MENU.AddDivider pl_menu
     #MENU.AddLnBreak pl_menu
     MENU.AddLabel pl_menu QEMU:
-    MENU.AddRadioButton pl_menu v8 v8 MENU.DemoPlQemuCb
-    MENU.AddRadioButton pl_menu arm32 arm MENU.DemoPlQemuCb
+    MENU.AddRadioButton pl_menu v8 v8 DEMO.PlQemuCallback
+    MENU.AddRadioButton pl_menu arm32 arm DEMO.PlQemuCallback
     #MENU.AddDivider pl_menu
     #MENU.AddRadioButton pl_menu "Name w/ space" ace MENU.DemoPlQemuCb
 
@@ -126,14 +126,21 @@ MENU.CreateDemo() {
     MENU.Select pl_menu rpi3 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.Create pl_sub_menu
+    MENU.Create pl_sub_menu $null $null DEMO.PlSubMenuCallback
     MENU.SetStyleEx pl_sub_menu false '-' '' ''
 
     MENU.AddLabel pl_sub_menu SubMenu:
-    MENU.AddRadioButton pl_sub_menu Item1 m1 MENU.DemoSubChange
-    MENU.AddRadioButton pl_sub_menu Item2 m2 MENU.DemoSubChange
-    MENU.AddRadioButton pl_sub_menu Item3 m3 MENU.DemoSubChange
+    MENU.AddRadioButton pl_sub_menu Item1 m1 DEMO.PlSubMenuRadioCallback
+    MENU.AddRadioButton pl_sub_menu Item2 m2 DEMO.PlSubMenuRadioCallback
+    MENU.AddRadioButton pl_sub_menu Item3 m3 DEMO.PlSubMenuRadioCallback
+
+    MENU.AddDivider pl_sub_menu
+    MENU.AddLabel pl_sub_menu Mode:
+    #MENU.AddCheckButton pl_sub_menu Check1 k1 DEMO.PlSubMenuCheckCallback
+    #MENU.AddCheckButton pl_sub_menu Check2 k2 DEMO.PlSubMenuCheckCallback
+
     MENU.Select pl_sub_menu Item2 false
+    #MENU.Select pl_sub_menu Check2 false
 
     MENU.AddDivider pl_menu
     MENU.AddMenu pl_menu pl_sub_menu
@@ -216,23 +223,16 @@ fooo()
 
 # [IN] handle - the menu's name/handle
 # [IN] name   - the menu's name (if specified)
-MENU.DemoMainMenu() {
+DEMO.MainMenuCallback() {
     #MENU._separator $1
-    echo " $2.Callback..."
+    echo " PL.$2..."
     echo ' ...'
 }
 
-# [IN]      handle - the menu's name/handle
-# [IN]      name   - the name of the selected item
-# [IN][OPT] state  - {on, off} item's state (check.button type only)
-MENU.DemoPlQemuCb() {
-    #MENU._separator $1
-    echo " PL.Qemu.$2.Callback..."
-    echo ' ...'
-}
-
-MENU.DemoPlLinuxCb() {
-    if [[ "$2" != 'Linux' ]]; then
+# [IN] handle - the menu's name/handle
+# [IN] name   - the item's selected
+DEMO.PlLinuxCallback() {
+    if [ "$2" != 'Linux' ]; then
         MENU._error "Wrong callback!"
         return
     fi
@@ -241,19 +241,43 @@ MENU.DemoPlLinuxCb() {
     echo ' ...'
 }
 
-MENU.DemoPlRpi3Cb() {
+DEMO.PlRpi3Callback() {
     #MENU._separator $1
     echo " PL.$2.Callback..."
     echo ' ...'
 }
 
-MENU.DemoSubChange() {
+DEMO.PlQemuCallback() {
     #MENU._separator $1
-    echo " PLATFORM.SUB-MENU.$2.Callback..."
+    echo " PL.$2..."
     echo ' ...'
 }
 
-MENU.DemoBuildChange() {
+# -----------------------------------------------------------------------------------------------------------------
+
+DEMO.PlSubMenuCallback() {
+    echo " PL.SubMenu..."
+    echo ' ...'
+}
+
+DEMO.PlSubMenuRadioCallback() {
+    #MENU._separator $1
+    echo " PL.SubMenu.$2..."
+    echo ' ...'
+}
+
+# [IN]      handle - the menu's name/handle
+# [IN]      name   - the name of the selected item
+# [IN][OPT] state  - {on, off} item's state (check.button type only)
+DEMO.PlSubMenuCheckCallback() {
+    #MENU._separator $1
+    echo " PL.SubMenu.$2.[$3]..."
+    echo ' ...'
+}
+
+# -----------------------------------------------------------------------------------------------------------------
+
+DEMO.BuildChange() {
     #MENU._separator $1
     echo " Build.$2.Callback..."
 
@@ -328,7 +352,7 @@ MENU.DemoLogsCb() {
 
 alias dev='MENU.ShowAll true'
 
-MENU.CreateDemo
+DEMO.Create
 
 # Display all the menus and calls all the item's callbacks, which sets
 # the environment, controlled by the menus, into the default state
