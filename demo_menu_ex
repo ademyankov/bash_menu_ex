@@ -6,11 +6,149 @@ source ./menu_ex
 #
 # Demo Example:
 #
+# Look at 'DEMO.Create' - function to see how the demo menus are created
+#
 # run 'dev' alias to see all the demo menus
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------------------------------------------------
+# The Demo Menu's Callbacks
+# ---------------------------------------------------------------------------------------------------------------------
+
+# [IN] handle - the menu's name/handle
+# [IN] name   - the menu's name (if specified)
+DEMO.MainMenuCallback() {
+    #MENU._separator $1
+    echo " PL.$2..."
+    echo ' ...'
+}
+
+# [IN] handle - the menu's name/handle
+# [IN] name   - the item's selected
+DEMO.PlLinuxCallback() {
+    if [ "$2" != 'Linux' ]; then
+        MENU._error "Wrong callback!"
+        return
+    fi
+    #MENU._separator $1
+    echo " PL.Linux.Callback..."
+    echo ' ...'
+}
+
+DEMO.PlQemuCallback() {
+    #MENU._separator $1
+    echo " PL.$2..."
+    echo ' ...'
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+DEMO.PlChild1Callback() {
+    echo " PL.It..."
+    echo ' ...'
+}
+
+DEMO.PlChild1RadioCallback() {
+    #MENU._separator $1
+    echo " PL.SubMenu.$2..."
+    echo ' ...'
+}
+
+# [IN]      handle - the menu's name/handle
+# [IN]      name   - the name of the selected item
+# [IN][OPT] state  - {on, off} item's state (check.button type only)
+DEMO.PlChild1CheckCallback() {
+    #MENU._separator $1
+    echo " PL.SubMenu.$2.[$3]..."
+    echo ' ...'
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+DEMO.PlChild2RadioCallback() {
+    #MENU._separator $1
+    echo " PL.Extra.$2..."
+    echo ' ...'
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+DEMO.BuildChange() {
+    #MENU._separator $1
+    echo " Build.$2.Callback..."
+
+    case $2 in
+        Debug)
+            echo ' ...'
+            ;;
+        Release)
+            echo ' ...'
+            ;;
+    esac
+
+}
+
+MENU.DemoBuildGccFlags() {
+    #MENU._separator $1
+    echo " PL.$2.state.[$3].Callback..."
+
+    case $2 in
+        Pedantic)
+            echo ' ...'
+            ;;
+        Wall)
+            echo ' ...'
+            ;;
+        Werror)
+            echo ' ...'
+            ;;
+        fPIC)
+            echo ' ...'
+            ;;
+        isoC99)
+            echo ' ...'
+            ;;
+    esac
+
+}
+
+MENU.DemoLogsCb() {
+    #MENU._separator $1
+    echo " LOGS.$2.Callback..."
+
+    case $2 in
+        FATAL)
+            echo ' ...'
+            ;;
+        SEVERE)
+            echo ' ...'
+            ;;
+        WARNING)
+            echo ' ...'
+            ;;
+        INFO)
+            echo ' ...'
+            ;;
+        FINE)
+            echo ' ...'
+            ;;
+        FINER)
+            echo ' ...'
+            ;;
+        FINEST)
+            echo ' ...'
+            ;;
+        OFF)
+            echo ' ...'
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+
 DEMO.Create() {
+    # See menu_ex:'Functions and parameters acronims' for 'MENU.Null' explanation
     null='MENU.Null'
 
     #
@@ -105,7 +243,6 @@ DEMO.Create() {
     # > nux true all - all the above + triggers all the check button item's callbacks (if any)
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.AddRadioButton pl_menu rpi3 pi3 DEMO.PlRpi3Callback
     MENU.AddDivider pl_menu
     #MENU.AddLnBreak pl_menu
     MENU.AddLabel pl_menu QEMU:
@@ -123,35 +260,35 @@ DEMO.Create() {
     #             |     |    |    flag1            -
     #             |     |    |     |    flag2      -
     #             |     |    |     |     |    mode -
-    MENU.Select pl_menu rpi3 false false true no
+    MENU.Select pl_menu v8 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Create a menu which will be a sub menu for the PLATFORM menu
+    # Create two child menus and add them into the main (parent) PLATFORM menu
     # -----------------------------------------------------------------------------------------------------------------
-    MENU.Create pl_sub_menu $null $null DEMO.PlSubMenuCallback
-    MENU.AddRadioButton pl_sub_menu Item1 m1 DEMO.PlSubMenuRadioCallback
-    MENU.AddRadioButton pl_sub_menu Item2 m2 DEMO.PlSubMenuRadioCallback
-    MENU.AddRadioButton pl_sub_menu Item3 m3 DEMO.PlSubMenuRadioCallback
+    MENU.Create pl_child_menu1 $null $null DEMO.PlChild1Callback
+    MENU.AddLabel pl_child_menu1 It:
+    MENU.AddRadioButton pl_child_menu1 Item1 m1 DEMO.PlChild1RadioCallback
+    MENU.AddRadioButton pl_child_menu1 Item2 m2 DEMO.PlChild1RadioCallback
+    MENU.AddRadioButton pl_child_menu1 Item3 m3 DEMO.PlChild1RadioCallback
+    # -----------------------------------------------------------------------------------------------------------------
+    MENU.AddDivider pl_child_menu1
+    MENU.AddLabel pl_child_menu1 Mode:
+    MENU.AddCheckButton pl_child_menu1 Ps1 s1 DEMO.PlChild1CheckCallback
+    MENU.AddCheckButton pl_child_menu1 Nx Nx DEMO.PlChild1CheckCallback
+    MENU.Select pl_child_menu1 Item2 false
+    MENU.Select pl_child_menu1 Ps1 false
+    # -----------------------------------------------------------------------------------------------------------------
+    MENU.Create pl_child_menu2
+    MENU.AddDivider pl_child_menu2
+    MENU.AddLabel pl_child_menu2 Extra:
+    MENU.AddRadioButton pl_child_menu2 Sub1 b1 DEMO.PlChild2RadioCallback
+    MENU.AddRadioButton pl_child_menu2 Sub2 b2 DEMO.PlChild2RadioCallback
+    # -----------------------------------------------------------------------------------------------------------------
 
-    #MENU.AddLnBreak pl_sub_menu
-    MENU.AddDivider pl_sub_menu
-    MENU.AddLabel pl_sub_menu Mode:
-    MENU.AddCheckButton pl_sub_menu Ps1 s1 DEMO.PlSubMenuCheckCallback
-    MENU.AddCheckButton pl_sub_menu Nx Nx DEMO.PlSubMenuCheckCallback
-    MENU.Select pl_sub_menu Item2 false
-    MENU.Select pl_sub_menu Ps1 false
-    # -----------------------------------------------------------------------------------------------------------------
-    MENU.Create pl_sub_menu1
-    MENU.AddLabel pl_sub_menu1 Extra:
-    MENU.AddRadioButton pl_sub_menu1 Sub1 b1 DEMO.PlSubMenuRadioCallback
-    MENU.AddRadioButton pl_sub_menu1 Sub2 b2 DEMO.PlSubMenuRadioCallback
-    # -----------------------------------------------------------------------------------------------------------------
-
-    #MENU.AddDivider pl_menu
-    #MENU.AddLnBreak pl_menu
-    MENU.AddMenu pl_menu pl_sub_menu
-    MENU.AddMenu pl_menu pl_sub_menu1
+    MENU.AddDivider pl_menu
+    MENU.AddMenu pl_menu pl_child_menu1
+    MENU.AddMenu pl_menu pl_child_menu2
 
     # -----------------------------------------------------------------------------------------------------------------
     # Show/display the menu
@@ -221,138 +358,7 @@ DEMO.Create() {
     MENU._debug_print_all
 }
 
-# -----------------------------------------------------------------------------------------------------------------
-# The Demo Menu's Callbacks
-# -----------------------------------------------------------------------------------------------------------------
 
-# [IN] handle - the menu's name/handle
-# [IN] name   - the menu's name (if specified)
-DEMO.MainMenuCallback() {
-    #MENU._separator $1
-    echo " PL.$2..."
-    echo ' ...'
-}
-
-# [IN] handle - the menu's name/handle
-# [IN] name   - the item's selected
-DEMO.PlLinuxCallback() {
-    if [ "$2" != 'Linux' ]; then
-        MENU._error "Wrong callback!"
-        return
-    fi
-    #MENU._separator $1
-    echo " PL.Linux.Callback..."
-    echo ' ...'
-}
-
-DEMO.PlRpi3Callback() {
-    #MENU._separator $1
-    echo " PL.$2.Callback..."
-    echo ' ...'
-}
-
-DEMO.PlQemuCallback() {
-    #MENU._separator $1
-    echo " PL.$2..."
-    echo ' ...'
-}
-
-# -----------------------------------------------------------------------------------------------------------------
-
-DEMO.PlSubMenuCallback() {
-    echo " PL.SubMenu..."
-    echo ' ...'
-}
-
-DEMO.PlSubMenuRadioCallback() {
-    #MENU._separator $1
-    echo " PL.SubMenu.$2..."
-    echo ' ...'
-}
-
-# [IN]      handle - the menu's name/handle
-# [IN]      name   - the name of the selected item
-# [IN][OPT] state  - {on, off} item's state (check.button type only)
-DEMO.PlSubMenuCheckCallback() {
-    #MENU._separator $1
-    echo " PL.SubMenu.$2.[$3]..."
-    echo ' ...'
-}
-
-# -----------------------------------------------------------------------------------------------------------------
-
-DEMO.BuildChange() {
-    #MENU._separator $1
-    echo " Build.$2.Callback..."
-
-    case $2 in
-        Debug)
-            echo ' ...'
-            ;;
-        Release)
-            echo ' ...'
-            ;;
-    esac
-
-}
-
-MENU.DemoBuildGccFlags() {
-    #MENU._separator $1
-    echo " PL.$2.state.[$3].Callback..."
-
-    case $2 in
-        Pedantic)
-            echo ' ...'
-            ;;
-        Wall)
-            echo ' ...'
-            ;;
-        Werror)
-            echo ' ...'
-            ;;
-        fPIC)
-            echo ' ...'
-            ;;
-        isoC99)
-            echo ' ...'
-            ;;
-    esac
-
-}
-
-MENU.DemoLogsCb() {
-    #MENU._separator $1
-    echo " LOGS.$2.Callback..."
-
-    case $2 in
-        FATAL)
-            echo ' ...'
-            ;;
-        SEVERE)
-            echo ' ...'
-            ;;
-        WARNING)
-            echo ' ...'
-            ;;
-        INFO)
-            echo ' ...'
-            ;;
-        FINE)
-            echo ' ...'
-            ;;
-        FINER)
-            echo ' ...'
-            ;;
-        FINEST)
-            echo ' ...'
-            ;;
-        OFF)
-            echo ' ...'
-            ;;
-    esac
-}
-
-# -----------------------------------------------------------------------------------------------------------------
 
 alias dev='MENU.ShowAll true'
 

@@ -542,9 +542,9 @@ MENU.Select() {
     MENU._log_info "ARGS: $*"
     [[ $# -gt 2 ]] && local show=$3 || local show='false'
 
-    # current_item is used for a sub-menu trick to call only one callback of
-    # the selected radio/check button and not to call all the callbacks of all
-    # radio/check buttons in case of sub-menus
+    # current_item is used for a child menu trick to call only one callback of
+    # the selected radio/check button and do not to call all the callbacks of
+    # all the radio/check buttons of all child menus
     current_item="$2"
 
     # We have to go through items[] first to check whether
@@ -582,8 +582,9 @@ MENU.Select() {
     if [ "$show" == 'true' ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
-        unset current_item
     fi
+
+    unset current_item
 }
 
 # arguments are comming from the item's alias: $*
@@ -601,6 +602,7 @@ MENU._select() {
     MENU._separator $1
     MENU.Show $1 $f1 $f2 current
     MENU._separator $1
+
     unset current_item
 }
 
@@ -859,8 +861,8 @@ MENU.Show() {
                     MENU._log_warning "mode: $mode current_item: $current_item"
                     MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
 
-                    map[$1]=$(declare -p context)
-                    MENUEX['map']=$(declare -p map)
+                    #map[$1]=$(declare -p context)
+                    #MENUEX['map']=$(declare -p map)
                 fi
 
                 # Store all the check button item's callbacks to be called later
