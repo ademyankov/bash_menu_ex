@@ -1047,6 +1047,12 @@ MENU._separator() {
     eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
+    # if it's a sub menu then we have to use the parent's menu width
+    if [ "${context['is.sub.menu']}" == 'true' ]; then
+        menu=${context['parent.menu']}
+        eval "${map["$menu"]}"
+    fi
+
     width=${context['menu.width']}
 
     [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width.max']}
