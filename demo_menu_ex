@@ -134,7 +134,7 @@ DEMO.Create() {
     MENU.AddRadioButton pl_sub_menu Item2 m2 DEMO.PlSubMenuRadioCallback
     MENU.AddRadioButton pl_sub_menu Item3 m3 DEMO.PlSubMenuRadioCallback
 
-    #MENU.AddLnBreak pl_sub_menu
+    MENU.AddLnBreak pl_sub_menu
     MENU.AddDivider pl_sub_menu
     MENU.AddLabel pl_sub_menu Mode:
     MENU.AddCheckButton pl_sub_menu Ps1 s1 DEMO.PlSubMenuCheckCallback
@@ -142,10 +142,16 @@ DEMO.Create() {
     MENU.Select pl_sub_menu Item2 false
     MENU.Select pl_sub_menu Ps1 false
     # -----------------------------------------------------------------------------------------------------------------
+    MENU.Create pl_sub_menu1
+    MENU.AddLabel pl_sub_menu1 Extra:
+    MENU.AddRadioButton pl_sub_menu1 Sub1 b1 DEMO.PlSubMenuRadioCallback
+    MENU.AddRadioButton pl_sub_menu1 Sub2 b2 DEMO.PlSubMenuRadioCallback
+    # -----------------------------------------------------------------------------------------------------------------
 
     #MENU.AddDivider pl_menu
-    MENU.AddLnBreak pl_menu
+    #MENU.AddLnBreak pl_menu
     MENU.AddMenu pl_menu pl_sub_menu
+    MENU.AddMenu pl_menu pl_sub_menu1
 
     # -----------------------------------------------------------------------------------------------------------------
     # Show/display the menu

@@ -724,12 +724,18 @@ MENU.Show() {
         parent_header_pad=$(MENU._string_pad '' $width)
     fi
 
-    while true; do
-        eval "${context['sub.menus']}"
-        eval "${context['items']}"
+    eval "${context['sub.menus']}"
+    local parent_sub_menus=("${submenus[@]}")
+    local sub_menu_count=$((${#submenus[@]}))
+    local sub_menu_index=0
 
-        local sub_menu_count=$((${#submenus[@]}))
-        local sub_menu_index=0
+    local has_sub_menu='false'
+    if [ "${context['has.sub.menu']}" == "true" ] && [ $sub_menu_count -gt 0 ]; then
+        has_sub_menu='true'
+    fi
+
+    while true; do
+        eval "${context['items']}"
 
         if [ "${context['name']}" != 'MENU.Null' ]; then
             printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']} "
@@ -860,19 +866,14 @@ MENU.Show() {
             fi
         done
 
-        if [ $sub_menu_count -gt 0 ] && [ $sub_menu_index -lt $sub_menu_count ]; then
-            local subname=${submenus["$sub_menu_index"]}
-
-            eval "${map["$subname"]}"
-            eval "${context['items']}"
-
-            if [ "${context['is.sub.menu']}" != 'true' ]; then
-                MENU._log_error "Not a sub-menu! Cannot process further."
-                return
+        # if parent has sub-menus then unpack sub menu each by each and print it all
+        if [ "$has_sub_menu" == 'true' ]; then
+            if [[ $sub_menu_count -gt $sub_menu_index ]]; then
+                local subname=${parent_sub_menus["$sub_menu_index"]}
+                eval "${map["$subname"]}"
+                ((sub_menu_index++))
+                continue
             fi
-
-            ((sub_menu_index++))
-            continue;
         fi
 
         break
