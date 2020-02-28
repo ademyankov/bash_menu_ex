@@ -910,6 +910,7 @@ MENU.ShowAll() {
             MENU.Show $menu $f1 $f2 $mode
         done
     fi
+
     MENU._separator $last_menu true
 }
 
@@ -993,16 +994,48 @@ MENU._separator() {
         return
     fi
 
-    # The widths of the menu have never been calculated;
-    # Iterate through all the menus and calculate the width for each of the menu
+    local width=0
+
+    # One time procedure; The widths of the menu have never been calculated;
+    # Iterate through all the menus and calculate the width for each of the menus
     if [ ${MENUEX['width.max']} -lt 1 ]; then
         eval "${MENUEX['map']}"
         for menu in "${!map[@]}"; do
             width=$(MENU._calculate_menu_width $menu)
             [[ $width -gt ${MENUEX['width.max']} ]] && MENUEX['width.max']=$width
 
-            MENU._log_warning "Re-calc the width: $width for '$menu'"
+            MENU._log_warning "Re-calc: $menu[menu.width]: $width"
 
+            eval "${map["$menu"]}"
+
+            context['menu.width']=$width
+            map[$menu]=$(declare -p context)
+            MENUEX['map']=$(declare -p map)
+        done
+
+        # now let's take care of sub menus
+        eval "${MENUEX['map']}"
+        for menu in "${!map[@]}"; do
+            eval "${map["$menu"]}"
+            [ "${context['is.sub.menu']}" == 'true' ] && continue
+
+            eval "${context['sub.menus']}"
+            [ ${#submenus[@]} -eq 0 ] && continue
+
+            width=${context['menu.width']}
+            for i in ${!submenus[@]}; do
+                local subname=${submenus["$i"]}
+                eval "${map[$subname]}"
+
+                MENU._log_warning "submenus[$i]: $subname['menu.width']: ${context['menu.width']}"
+
+                ((width += ${context['menu.width']}))
+            done
+
+            MENU._log_warning "Re-calc w/ subs: $menu[menu.width]: $width"
+            [[ $width -gt ${MENUEX['width.max']} ]] && MENUEX['width.max']=$width
+
+            # Update the new width w/ all the subs combined
             eval "${map["$menu"]}"
 
             context['menu.width']=$width
@@ -1014,7 +1047,8 @@ MENU._separator() {
     eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
-    local width=${context['menu.width']}
+    width=${context['menu.width']}
+
     [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width.max']}
 
     if [ "${context['separator.show']}" == 'true' ]; then

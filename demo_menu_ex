@@ -127,15 +127,15 @@ DEMO.Create() {
     # -----------------------------------------------------------------------------------------------------------------
 
     MENU.Create pl_sub_menu $null $null DEMO.PlSubMenuCallback
-    MENU.SetStyleEx pl_sub_menu false '-' '' ''
+    MENU.SetStyleEx pl_sub_menu true '-' '' ''
 
-    MENU.AddLabel pl_sub_menu SubMenu:
+    MENU.AddLabel pl_sub_menu Sub:
     MENU.AddRadioButton pl_sub_menu Item1 m1 DEMO.PlSubMenuRadioCallback
     MENU.AddRadioButton pl_sub_menu Item2 m2 DEMO.PlSubMenuRadioCallback
     MENU.AddRadioButton pl_sub_menu Item3 m3 DEMO.PlSubMenuRadioCallback
 
-    MENU.AddDivider pl_sub_menu
-    MENU.AddLabel pl_sub_menu Mode:
+    #MENU.AddDivider pl_sub_menu
+    #MENU.AddLabel pl_sub_menu Mode:
     #MENU.AddCheckButton pl_sub_menu Check1 k1 DEMO.PlSubMenuCheckCallback
     #MENU.AddCheckButton pl_sub_menu Check2 k2 DEMO.PlSubMenuCheckCallback
 
