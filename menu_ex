@@ -130,12 +130,13 @@ MENU.Create() {
     context['name']='MENU.Null'
     context['alias']='MENU.Null'
     context['callback']='MENU.Null'
-    context['tmp.checked']=''       # temporally field used to specify the check.button at the context level
     context['selected']=''          # curently selected radio.button
     context['item.length.max']=0    # the max char length of an item's name
     context['menu.width']=0         # the length of the longest string in the menu (used for menu's separator)
     context['sub.menus']='declare -a submenus=()'
     context['is.sub.menu']='false'
+    context['has.sub.menu']='false'
+    context['is.ln.break.last']='false'
     context['parent.menu']=''
 
     MENU._log_info "args: $*"
@@ -323,6 +324,9 @@ MENU.SetStyleEx() {
 # [IN] name - name of the menu
 # [IN] sub  - a menu to be a sub-menu for the 'name' menu
 #
+# Remark: When menu 'sub' becomes a sub menu it will clear those fields:
+#   'name', name's header and footer, and 'alias' will be un-set
+#
 # -----------------------------------------------------------------------------
 MENU.AddMenu() {
     if [[ $# -ne 2 ]]; then
@@ -341,6 +345,21 @@ MENU.AddMenu() {
     context['is.sub.menu']=true
     context['parent.menu']=$1
 
+    # Since menu $2 will be a sub menu it will not have those fields:
+    # 'name', name's header and footer, and 'alias'
+    context['name']='MENU.Null'
+    context['name.header']=''
+    context['name.footer']=''
+
+    # If 'alias' was created then we have to delete it
+    if [ "${context['alias']}" != '' ]; then
+        if [ `alias | grep "alias ${context['alias']}=" | wc -l` != 0 ]; then
+            unalias "${context['alias']}"
+        fi
+    fi
+
+    context['alias']='MENU.Null'
+
     map[$2]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 
@@ -353,6 +372,7 @@ MENU.AddMenu() {
     eval "${context['sub.menus']}"
     submenus["${#submenus[@]}"]=$2
 
+    context['has.sub.menu']='true'
     context['sub.menus']=$(declare -p submenus)
 
     map[$1]=$(declare -p context)
@@ -393,6 +413,8 @@ MENU._add_item() {
 
     items[${#items[@]}]=$(declare -p item)
     context['items']=$(declare -p items)
+
+    [ "${item['type']}" == 'ln.break' ] && context['is.ln.break.last']='true' || context['is.ln.break.last']='false'
 
     # Used for 'by.largest.item' alignment since we need to know what item's length is the longest one
     [[ ${context['item.length.max']} -lt ${#item['name']} ]] && context['item.length.max']=${#item['name']}
@@ -511,6 +533,11 @@ MENU.Select() {
     MENU._log_info "ARGS: $*"
     [[ $# -gt 2 ]] && local show=$3 || local show='false'
 
+    # current_item is used for a sub-menu trick to call only one callback of
+    # the selected radio/check button and not to call all the callbacks of all
+    # radio/check buttons in case of sub-menus
+    current_item="$2"
+
     # We have to go through items[] first to check whether
     # the selected item is a check button type item
     eval "${context['items']}"
@@ -521,8 +548,7 @@ MENU.Select() {
             [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
             items["$i"]=$(declare -p item)
             context['items']=$(declare -p items)
-            context['tmp.checked']=$2
-            MENU._log_info "CHECK BOX: '${context['tmp.checked']}' state='${item['checked']}'"
+            MENU._log_info "CHECK BOX: '$current_item' state='${item['checked']}'"
             check_button_set='true'
             break
         fi
@@ -530,9 +556,6 @@ MENU.Select() {
 
     # Set selected if the itme's type is the radio.button
     if [[ ! "$check_button_set" ]]; then
-        # current_item is used for a trick to call only one callback of the selected
-        # radio button and not all the callbacks of all radio buttons in case of sub menus
-        current_item="$2"
         context['selected']=$2
     fi
 
@@ -691,6 +714,16 @@ MENU.Show() {
     local -a arguments=()
     local idx=0
 
+    # Is used to 'space'-pad the menu after line break
+    local parent_header_pad=''
+    if [ "${context['name']}" != 'MENU.Null' ]; then
+        local width=${#context['name']}
+        ((width += ${#context['name.header']}))
+        ((width += ${#context['name.footer']}))
+        ((width += 1))
+        parent_header_pad=$(MENU._string_pad '' $width)
+    fi
+
     while true; do
         eval "${context['sub.menus']}"
         eval "${context['items']}"
@@ -730,13 +763,8 @@ MENU.Show() {
 
             if [ "$type" == 'ln.break' ]; then
                 printf '\n'
-                if [ "${context['name']}" != 'MENU.Null' ]; then
-                    local width=${#context['name']}
-                    ((width += ${#context['name.header']}))
-                    ((width += ${#context['name.footer']}))
-                    ((width += 1))
-                    local pad=$(MENU._string_pad '' $width)
-                    printf "$pad"
+                if [ "${context['name']}" != 'MENU.Null' ] || [ "${context['is.sub.menu']}" == 'true' ]; then
+                    printf "$parent_header_pad"
                 fi
                 continue
             fi
@@ -808,16 +836,14 @@ MENU.Show() {
                     fi
                 fi
 
-                if [ "${context['tmp.checked']}" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                if [ "$current_item" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     ((idx++))
 
                     MENU._log_ln
-                    MENU._log_warning "mode: $mode context[tmp.checked]: ${context['tmp.checked']}"
+                    MENU._log_warning "mode: $mode current_item: $current_item"
                     MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
-
-                    context['tmp.checked']=''
 
                     map[$1]=$(declare -p context)
                     MENUEX['map']=$(declare -p map)
@@ -836,7 +862,6 @@ MENU.Show() {
 
         if [ $sub_menu_count -gt 0 ] && [ $sub_menu_index -lt $sub_menu_count ]; then
             local subname=${submenus["$sub_menu_index"]}
-            #MENU._log_warning "Sub-menu: '$subname' processing..."
 
             eval "${map["$subname"]}"
             eval "${context['items']}"
@@ -847,7 +872,6 @@ MENU.Show() {
             fi
 
             ((sub_menu_index++))
-
             continue;
         fi
 
@@ -970,6 +994,23 @@ MENU._calculate_menu_width() {
     local width=0
     [ $max -gt 0 ] && width=$max || width=$length
 
+    #
+    # A special corner case of [main.menu][ln.break] + [sub.menu] needs some
+    # special handling because the [sub.menu] length now needs to add the length
+    # of 'parent.menu' header and now the max length of the menu needs to take
+    # it into account that [sub.menu] length might become the biggest length of
+    # the entire menu; 'context' has 2 flags to mark this very corner case:
+    # 'is.ln.break.last' and 'has.sub.menu'
+    if [ "${context['is.sub.menu']}" == 'true' ]; then
+        local parent="${context['parent.menu']}"
+        eval "${map["$parent"]}"
+        if [ "${context['is.ln.break.last']}" == 'false' ]; then
+            echo $width
+            return
+        fi
+    fi
+
+    # When we get here the context is either the menu or the parent menu
     if [[ "${context['name']}" != 'MENU.Null' ]]; then
         ((width += ${#context['name']}))
         ((width += ${#context['name.header']}))
@@ -1022,14 +1063,17 @@ MENU._separator() {
             eval "${context['sub.menus']}"
             [ ${#submenus[@]} -eq 0 ] && continue
 
+            local parent_ln_break=${context['is.ln.break.last']}
             width=${context['menu.width']}
             for i in ${!submenus[@]}; do
                 local subname=${submenus["$i"]}
                 eval "${map[$subname]}"
-
                 MENU._log_warning "submenus[$i]: $subname['menu.width']: ${context['menu.width']}"
-
-                ((width += ${context['menu.width']}))
+                if [ "$parent_ln_break" == 'true' ]; then
+                    [ ${context['menu.width']} -gt $width ] && width=${context['menu.width']}
+                else
+                    ((width += ${context['menu.width']}))
+                fi
             done
 
             MENU._log_warning "Re-calc w/ subs: $menu[menu.width]: $width"

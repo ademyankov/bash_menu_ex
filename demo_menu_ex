@@ -126,23 +126,25 @@ DEMO.Create() {
     MENU.Select pl_menu rpi3 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
+    # -----------------------------------------------------------------------------------------------------------------
+    # Create a menu which will be a sub menu for the PLATFORM menu
+    # -----------------------------------------------------------------------------------------------------------------
     MENU.Create pl_sub_menu $null $null DEMO.PlSubMenuCallback
-    MENU.SetStyleEx pl_sub_menu true '-' '' ''
-
-    MENU.AddLabel pl_sub_menu Sub:
     MENU.AddRadioButton pl_sub_menu Item1 m1 DEMO.PlSubMenuRadioCallback
     MENU.AddRadioButton pl_sub_menu Item2 m2 DEMO.PlSubMenuRadioCallback
     MENU.AddRadioButton pl_sub_menu Item3 m3 DEMO.PlSubMenuRadioCallback
 
-    #MENU.AddDivider pl_sub_menu
-    #MENU.AddLabel pl_sub_menu Mode:
-    #MENU.AddCheckButton pl_sub_menu Check1 k1 DEMO.PlSubMenuCheckCallback
-    #MENU.AddCheckButton pl_sub_menu Check2 k2 DEMO.PlSubMenuCheckCallback
-
+    #MENU.AddLnBreak pl_sub_menu
+    MENU.AddDivider pl_sub_menu
+    MENU.AddLabel pl_sub_menu Mode:
+    MENU.AddCheckButton pl_sub_menu Ps1 s1 DEMO.PlSubMenuCheckCallback
+    MENU.AddCheckButton pl_sub_menu Nx Nx DEMO.PlSubMenuCheckCallback
     MENU.Select pl_sub_menu Item2 false
-    #MENU.Select pl_sub_menu Check2 false
+    MENU.Select pl_sub_menu Ps1 false
+    # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.AddDivider pl_menu
+    #MENU.AddDivider pl_menu
+    MENU.AddLnBreak pl_menu
     MENU.AddMenu pl_menu pl_sub_menu
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -163,12 +165,7 @@ DEMO.Create() {
     #  unchecked    - call all the callbacks for all un-checked check button items
     #
     # -----------------------------------------------------------------------------------------------------------------
-    MENU._debug_print_all
-}
-
-fooo()
-{
-    :'
+:'
     MENU.Create build_menu Build Build MENU.DemoMainMenu
 
     #
@@ -214,7 +211,8 @@ fooo()
 
     MENU.Select logs_menu INFO false
     #MENU.Show logs_menu true true
-    '
+'
+    MENU._debug_print_all
 }
 
 # -----------------------------------------------------------------------------------------------------------------
