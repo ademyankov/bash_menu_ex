@@ -1,14 +1,18 @@
 #!/bin/sh
 
+# include MENU extension class
 source ./menu_ex
 
 # ---------------------------------------------------------------------------------------------------------------------
 #
 # Demo Example:
 #
-# Look at 'DEMO.Create' - function to see how the demo menus are created
+# Look at 'DEMO.Create' - to see how the demo menus are created
 #
-# run 'dev' alias to see all the demo menus
+# Aliases:
+#
+#   'dev'  - to display all the demo menus
+#   'flip' - to see how .CheckButtonForAll function can be used
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -18,7 +22,7 @@ source ./menu_ex
 
 # [IN] handle - the menu's name/handle
 # [IN] name   - the menu's name (if specified)
-DEMO.MainMenuCallback() {
+DEMO.PlCallback() {
     #MENU._separator $1
     echo " PL.$2..."
     echo ' ...'
@@ -74,9 +78,15 @@ DEMO.PlChild2RadioCallback() {
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-DEMO.BuildChange() {
+DEMO.BuildCallback() {
     #MENU._separator $1
-    echo " Build.$2.Callback..."
+    echo " Build.$2..."
+    echo ' ...'
+}
+
+DEMO.BuildModeCallback() {
+    #MENU._separator $1
+    echo " Build.$2..."
 
     case $2 in
         Debug)
@@ -89,9 +99,9 @@ DEMO.BuildChange() {
 
 }
 
-MENU.DemoBuildGccFlags() {
+DEMO.BuildGccFlagsCallback() {
     #MENU._separator $1
-    echo " PL.$2.state.[$3].Callback..."
+    echo " PL.$2.state.[$3]..."
 
     case $2 in
         Pedantic)
@@ -113,9 +123,11 @@ MENU.DemoBuildGccFlags() {
 
 }
 
-MENU.DemoLogsCb() {
+# ---------------------------------------------------------------------------------------------------------------------
+
+DEMO.LogsCallback() {
     #MENU._separator $1
-    echo " LOGS.$2.Callback..."
+    echo " LOGS.$2..."
 
     case $2 in
         FATAL)
@@ -146,6 +158,8 @@ MENU.DemoLogsCb() {
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
+# The Demo Menu
+# ---------------------------------------------------------------------------------------------------------------------
 
 DEMO.Create() {
     # See menu_ex:'Functions and parameters acronims' for 'MENU.Null' explanation
@@ -162,7 +176,7 @@ DEMO.Create() {
     # 2 [OPT]       |     name               - a displayed name of the menu
     # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
     # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
-    MENU.Create pl_menu PLATFORM PL DEMO.MainMenuCallback
+    MENU.Create pl_menu PLATFORM PL DEMO.PlCallback
     #MENU.Create pl_menu $null PL MENU.DemoMainMenu
     #MENU.Create pl_menu $null $null MENU.DemoMainMenu
     #MENU.Create pl_menu
@@ -308,8 +322,8 @@ DEMO.Create() {
     #  unchecked    - call all the callbacks for all un-checked check button items
     #
     # -----------------------------------------------------------------------------------------------------------------
-:'
-    MENU.Create build_menu Build Build MENU.DemoMainMenu
+
+    MENU.Create build_menu Build Build DEMO.BuildCallback
 
     #
     # if there is no alias for the menu you can call it through
@@ -321,49 +335,53 @@ DEMO.Create() {
     #
     # Demo menu 'Build'
     #
-    MENU.AddRadioButton build_menu Debug debug MENU.DemoBuildChange
-    MENU.AddRadioButton build_menu Release release MENU.DemoBuildChange
+    MENU.AddRadioButton build_menu Debug debug DEMO.BuildModeCallback
+    MENU.AddRadioButton build_menu Release release DEMO.BuildModeCallback
     MENU.AddDivider build_menu
-    MENU.AddCheckButton build_menu Pedantic Pedant MENU.DemoBuildGccFlags
-    MENU.AddCheckButton build_menu Wall all MENU.DemoBuildGccFlags
-    MENU.AddCheckButton build_menu Werror err MENU.DemoBuildGccFlags
-    MENU.AddCheckButton build_menu fPIC PIC MENU.DemoBuildGccFlags
-    MENU.AddCheckButton build_menu isoC99 iso MENU.DemoBuildGccFlags
+    MENU.AddCheckButton build_menu Pedantic Pedant DEMO.BuildGccFlagsCallback
+    MENU.AddCheckButton build_menu Wall all DEMO.BuildGccFlagsCallback
+    MENU.AddCheckButton build_menu Werror err DEMO.BuildGccFlagsCallback
+    MENU.AddCheckButton build_menu fPIC PIC DEMO.BuildGccFlagsCallback
+    MENU.AddCheckButton build_menu isoC99 iso DEMO.BuildGccFlagsCallback
     MENU.Select build_menu Debug false
     MENU.Select build_menu Wall false
     MENU.Select build_menu Werror false
-    #MENU.Show build_menu true true all
 
     #
     # Demo menu 'LOGS'
     #
 
-    MENU.Create logs_menu LOGS LOGS MENU.DemoMainMenu
+    MENU.Create logs_menu LOGS LOGS
     MENU.SetStyle logs_menu default by.largest.item
 
-    MENU.AddRadioButton logs_menu FATAL $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu SEVERE $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu WARNING $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu INFO $null MENU.DemoLogsCb
+    MENU.AddRadioButton logs_menu FATAL $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu SEVERE $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu WARNING $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu INFO $null DEMO.LogsCallback
     MENU.AddLnBreak logs_menu
-    MENU.AddRadioButton logs_menu FINE $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu FINER $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu FINEST $null MENU.DemoLogsCb
-    MENU.AddRadioButton logs_menu OFF $null MENU.DemoLogsCb
-
+    MENU.AddRadioButton logs_menu FINE $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu FINER $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu FINEST $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu OFF $null DEMO.LogsCallback
 
     MENU.Select logs_menu INFO false
-    #MENU.Show logs_menu true true
-'
+
     MENU._debug_print_all
 }
 
-
+# ---------------------------------------------------------------------------------------------------------------------
 
 alias dev='MENU.ShowAll true'
 
+# Some cool stuf that you can do with the MENU class
+alias flip='MENU._separator build_menu true; MENU.CheckButtonForAll build_menu flip true false false all; MENU._separator build_menu true'
+
 DEMO.Create
 
-# Display all the menus and calls all the item's callbacks, which sets
-# the environment, controlled by the menus, into the default state
+# Display all the menus and calls all the item's callbacks, which sets the environment,
+# controlled by the menus. It's like setting evything up into a default state
 MENU.ShowAll true true true all
+
+
+
+# ---------------------------------------------------------------------------------------------------------------------

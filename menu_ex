@@ -17,7 +17,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Debug'
+MENUEX['build']='Release'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -163,7 +163,7 @@ MENU.Create() {
     ${default}
 
     # Create an alias to display the menu
-    if [ "${context['alias']}" != '' ]; then
+    if [[ "${context['alias']}" != 'MENU.Null' ]]; then
         if [ `alias | grep "alias ${context['alias']}=" | wc -l` != 0 ]; then
             MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
             [ "${MENUEX['build']}" == "Release" ] && return
@@ -319,16 +319,15 @@ MENU.SetStyleEx() {
 }
 
 # -----------------------------------------------------------------------------
-# Insert a menu, as a sub (child) menu
+# Add a child menu into the parent menu. Allows to create independently
+# functioning radio buttons in the same menu
 #
 # [IN] parent - name of the main (parent) menu
 # [IN] child  - a menu to serve as a sub (child) menu for the parent menu
 #
 # Remark: When a menu becomes a child menu it style changes automatically and
-# it will loose some of its properties, like 'name', 'header', 'footer', and
-# the main menu's 'alias'
-#
-#
+# it looses some of its properties, like 'name', 'header', 'footer', and the
+# main menu's 'alias'
 #
 # -----------------------------------------------------------------------------
 MENU.AddMenu() {
@@ -434,7 +433,7 @@ MENU._add_item() {
     [[ "${item['type']}" != 'radio.button' && "${item['type']}" != 'check.button' ]] && return
 
     # Create an alias to call the menu's callback
-    if [[ "${item['alias']}" != 'MENU.Null' ]] && [[ "${item['callback']}" != '' ]]; then
+    if [[ "${item['alias']}" != 'MENU.Null' ]] && [[ "${item['callback']}" != 'MENU.Null' ]]; then
         if [ `alias | grep "alias ${item['alias']}=" | wc -l` != 0 ]; then
             MENU._warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
             [[ "${MENUEX['build']}" == 'Release' ]] && return
@@ -860,9 +859,6 @@ MENU.Show() {
                     MENU._log_ln
                     MENU._log_warning "mode: $mode current_item: $current_item"
                     MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
-
-                    #map[$1]=$(declare -p context)
-                    #MENUEX['map']=$(declare -p map)
                 fi
 
                 # Store all the check button item's callbacks to be called later
