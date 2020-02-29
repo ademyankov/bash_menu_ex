@@ -23,7 +23,6 @@ source ./menu_ex
 # [IN] handle - the menu's name/handle
 # [IN] name   - the menu's name (if specified)
 DEMO.PlCallback() {
-    #MENU._separator $1
     echo " PL.$2..."
     echo ' ...'
 }
@@ -35,13 +34,11 @@ DEMO.PlLinuxCallback() {
         MENU._error "Wrong callback!"
         return
     fi
-    #MENU._separator $1
     echo " PL.Linux.Callback..."
     echo ' ...'
 }
 
 DEMO.PlQemuCallback() {
-    #MENU._separator $1
     echo " PL.$2..."
     echo ' ...'
 }
@@ -54,7 +51,6 @@ DEMO.PlChild1Callback() {
 }
 
 DEMO.PlChild1RadioCallback() {
-    #MENU._separator $1
     echo " PL.SubMenu.$2..."
     echo ' ...'
 }
@@ -63,7 +59,6 @@ DEMO.PlChild1RadioCallback() {
 # [IN]      name   - the name of the selected item
 # [IN][OPT] state  - {on, off} item's state (check.button type only)
 DEMO.PlChild1CheckCallback() {
-    #MENU._separator $1
     echo " PL.SubMenu.$2.[$3]..."
     echo ' ...'
 }
@@ -71,7 +66,6 @@ DEMO.PlChild1CheckCallback() {
 # ---------------------------------------------------------------------------------------------------------------------
 
 DEMO.PlChild2RadioCallback() {
-    #MENU._separator $1
     echo " PL.Extra.$2..."
     echo ' ...'
 }
@@ -79,15 +73,12 @@ DEMO.PlChild2RadioCallback() {
 # ---------------------------------------------------------------------------------------------------------------------
 
 DEMO.BuildCallback() {
-    #MENU._separator $1
     echo " Build.$2..."
     echo ' ...'
 }
 
 DEMO.BuildModeCallback() {
-    #MENU._separator $1
     echo " Build.$2..."
-
     case $2 in
         Debug)
             echo ' ...'
@@ -96,13 +87,10 @@ DEMO.BuildModeCallback() {
             echo ' ...'
             ;;
     esac
-
 }
 
 DEMO.BuildGccFlagsCallback() {
-    #MENU._separator $1
     echo " PL.$2.state.[$3]..."
-
     case $2 in
         Pedantic)
             echo ' ...'
@@ -120,15 +108,12 @@ DEMO.BuildGccFlagsCallback() {
             echo ' ...'
             ;;
     esac
-
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 DEMO.LogsCallback() {
-    #MENU._separator $1
     echo " LOGS.$2..."
-
     case $2 in
         FATAL)
             echo ' ...'
@@ -189,7 +174,8 @@ DEMO.Create() {
     # 3 [OPT]   |     |   mode - call-mode of all the check button item's callbacks, for modes see documentation for .Show
     # > PL    false false all
     #
-    # 'PL' alias usage examples:
+    # Alias 'PL' usage examples:
+    #
     # > PL                 - displays the menu
     # > PL true            - displays the menu + calls the menu's callback
     # > PL false true      - displays the menu + calls the selected radio button item's callback
@@ -200,13 +186,15 @@ DEMO.Create() {
     # -----------------------------------------------------------------------------------------------------------------
     # Set the menu's style (replace the default style)
     #
-    # 1           handle                                               - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]       |    divider                                       - devider to be used w/ .AddDivider ('|' by default)
-    # 3 [OPT]       |      |        alignment                          - alignent of the item names (none by default)
-    # 4 [OPT]       |      |           |          color                - the color of hightlighted items (green by default)
-    # 5 [OPT]       |      |           |            |  symbol1       - the select symbol for the radio button when selected
-    # 6 [OPT]       |      |           |            |   |  symbol2 - the check symbol for the check button when checked
-    #MENU.SetStyle pl_menu default by.largest.item red '○' default
+    # 1           handle                                                  - a name/handle of the menu to be used w/ the API
+    # 2 [OPT]       |    divider                                          - devider to be used w/ .AddDivider ('|' by default)
+    # 3 [OPT]       |      |     alignment                                - alignent of the items (none by default)
+    # 4 [OPT]       |      |        |  background.color                   - the background color (black by default)
+    # 5 [OPT]       |      |        |    |     foreground.color           - the regular text color (white by default)
+    # 6 [OPT]       |      |        |    |       |  highlighter.color     - the hightlighted items color (green by default)
+    # 7 [OPT]       |      |        |    |       |    | radio.symbol      - the select symbol for the radio button when selected
+    # 8 [OPT]       |      |        |    |       |    |   |  check.symbol - the check symbol for the check button when checked
+    #MENU.SetStyle pl_menu default none default cyan red '○' default
     #MENU.SetStyle pl_menu default by.largest.item
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -247,33 +235,34 @@ DEMO.Create() {
     # -----------------------------------------------------------------------------------------------------------------
     # Under the hood 'nux' is just an alias for: 'MENU.Select pl_menu Linux true false true'
     #
-    # 1 [OPT]  flag1     - whether to call the main menu's callback
-    # 2 [OPT]   |   mode - call-mode of the check button callbacks [no (false), all (true), checked, unchecked]
+    # Alias 'nux' can take additional optional arguments:
+    #
+    # 1 [OPT]  flag1     - {true, false} whether to call the main menu's callback
+    # 2 [OPT]   |   mode - call-mode of the check button callbacks {no(false), all(true), checked, unchecked}
     # > nux    true no
     #
-    # 'nux' alias usage examples:
+    # Alias 'nux' usage examples:
+    #
     # > nux          - selects 'Linux' item, displays the 'PLATFORM' menu and triggers the 'Linux' item's callback
     # > nux true     - all the above + triggers the 'PLATFORM' menu's callback
-    # > nux true all - all the above + triggers all the check button item's callbacks (if any)
+    # > nux true all - all the above + triggers all the check button item's callbacks
     # -----------------------------------------------------------------------------------------------------------------
 
     MENU.AddDivider pl_menu
-    #MENU.AddLnBreak pl_menu
     MENU.AddLabel pl_menu QEMU:
     MENU.AddRadioButton pl_menu v8 v8 DEMO.PlQemuCallback
     MENU.AddRadioButton pl_menu arm32 arm DEMO.PlQemuCallback
-    #MENU.AddDivider pl_menu
     #MENU.AddRadioButton pl_menu "Name w/ space" ace MENU.DemoPlQemuCb
 
     # -----------------------------------------------------------------------------------------------------------------
     # Select an item of the menu
     #
-    #           handle                             - a name/handle of the menu to be used w/ the API
-    #             |    name                        - a name of an item to be set as 'selected' in the menu
-    #             |     |   show                   -
-    #             |     |    |    flag1            -
-    #             |     |    |     |    flag2      -
-    #             |     |    |     |     |    mode -
+    # 1         handle                           - a name/handle of the menu to be used w/ the API
+    # 2           |    name                      - a name of an item to be set as 'selected' in the menu
+    # 3 [OPT]     |     |   show                 - whether to show the menu after the item has been selected/checked
+    # 4 [OPT]     |     |    |    flag1          - whether to call the main menu's callback
+    # 5 [OPT]     |     |    |     |   flag2     - whether to call the selected radio button item's callback
+    # 6 [OPT]     |     |    |     |    |   mode - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
     MENU.Select pl_menu v8 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -317,7 +306,6 @@ DEMO.Create() {
     # mode:
     #  no (false)   - do not call any callback for any check button itmes
     #  all (true)   - call all the callbacks for all check button items regardless of the state
-    #  current      - call the callback of the check button item that changes the state (.Select only)
     #  checked      - call all the callbacks for all checked check button items
     #  unchecked    - call all the callbacks for all un-checked check button items
     #
@@ -378,13 +366,13 @@ DEMO.Create() {
 
 alias dev='MENU.ShowAll true'
 
-# Some cool stuf that you can do with the MENU class
-alias flip='MENU._separator build_menu true; MENU.CheckButtonForAll build_menu flip true false false all; MENU._separator build_menu true'
+# Some cool stuff that you can do with the MENU class
+alias flip='MENU._separator build_menu; MENU.CheckButtonForAll build_menu flip true false false all; MENU._separator build_menu'
 
 DEMO.Create
 
 # Display all the menus and calls all the item's callbacks, which sets the environment,
-# controlled by the menus. It's like setting evything up into a default state
+# controlled by the menus. It's like setting everything up into a default state
 MENU.ShowAll true true true all
 
 

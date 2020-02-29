@@ -173,7 +173,7 @@ MENU.Create() {
     fi
 }
 
-# The menu's class constructor
+# The MENU class constructor
 MENU._ctor() {
     if [[ ! ${MENUEX['styles']} ]]; then
         # Num  Colour    define          R G B
@@ -195,6 +195,15 @@ MENU._ctor() {
         styles['magenta']=`tput setaf 5`
         styles['cyan']=`tput setaf 6`
         styles['white']=`tput setaf 7`
+
+        # To use some cool custom colors:
+        # 1. run this command in the console
+        # for c in {0..255}; do tput setaf $c; tput setaf $c | cat -v; echo =$c; done
+        # 2. deside the colors you want to use
+        # 3. add them into the styles table w/ some unique names
+        styles['custom1']=`tput setaf 248`
+        styles['custom2']=`tput setaf 75`
+        # 4. use MENU.StyleEx function to set the colors for the menu
 
         styles['reset']=`tput sgr0`
 
@@ -220,25 +229,31 @@ MENU._ctor() {
 }
 
 # -----------------------------------------------------------------------------
-# Sets the style for the menu
+# Set the style of the menu (replace the default style)
 #
-# [IN]      handle  - a name/handle of the menu to be used w/ the API
-# [IN][OPT] divider - a divider to be used w/ .AddDivider ('|' by default)
-#
-# [IN][OPT] align   - the menu's items alignment (none by default), supported:
-#             by.largest.item - aligns all the menu's items by the length of the
-#                               largest item's name
-#
-# [IN][OPT] color        - the color of the selected item (green by default)
-# [IN][OPT] radio.symbol - the symbol for the selected radio.button ('♦' by default)
-# [IN][OPT] radio.symbol - the symbol for the cheched check.button ('x' by default)
+# [IN]      handle              - a name/handle of the menu to be used w/ the API
+# [IN][OPT] divider             - a divider to be used w/ .AddDivider ('|' by default)
+# [IN][OPT] alignment           - the menu's items alignment, supported:
+#            + none             : no alignment (by default)
+#            + by.largest.item  : aligns all the menu's items by the length of
+#                                 the largest item's name
+# [IN][OPT] background.color    - the color of the background
+#                                 (black by default)
+# [IN][OPT] foreground.color    - the color of the text
+#                                 (white by default)
+# [IN][OPT] highlighter.color   - the color of an item selected
+#                                 (green by default)
+# [IN][OPT] radio.button.symbol - a symbol for the radio.button selected
+#                                 ('♦' by default)
+# [IN][OPT] check.button.symbol - a symbol for the check.button checked
+#                                 ('x' by default)
 #
 # Remark: 'default' can be passed as any [OPT] argument, which will set the
 #         default value for the corresponding style parameter
 #
 # Example:
 #
-# > MENU.SetStyle menu1 default default ${red} '○' default
+# > MENU.SetStyle menu1 default default default default red '○'
 #
 # -----------------------------------------------------------------------------
 MENU.SetStyle() {
@@ -253,16 +268,20 @@ MENU.SetStyle() {
     # By default
     context['divider']='|'
     context['align']='none'
-    context['select.color']='green'
+    context['background.color']='custom1'
+    context['foreground.color']='custom1'
+    context['highlighter.color']='custom2'
     context['radio.button.symbol']='♦'
     context['check.button.symbol']='x'
 
     # Optional arguments
     [[ $# -gt 1 && "$2" != 'default' ]] && context['divider']=$2
     [[ $# -gt 2 && "$3" != 'default' ]] && context['align']=$3
-    [[ $# -gt 3 && "$4" != 'default' ]] && context['select.color']=$4
-    [[ $# -gt 4 && "$5" != 'default' ]] && context['radio.button.symbol']=$5
-    [[ $# -gt 5 && "$6" != 'default' ]] && context['check.button.symbol']=$6
+    [[ $# -gt 3 && "$4" != 'default' ]] && context['background.color']=$4
+    [[ $# -gt 4 && "$5" != 'default' ]] && context['foreground.color']=$5
+    [[ $# -gt 5 && "$6" != 'default' ]] && context['highlighter.color']=$6
+    [[ $# -gt 6 && "$7" != 'default' ]] && context['radio.button.symbol']=$7
+    [[ $# -gt 7 && "$8" != 'default' ]] && context['check.button.symbol']=$8
 
     map[$1]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
@@ -271,18 +290,19 @@ MENU.SetStyle() {
 # -----------------------------------------------------------------------------
 # Set the extra style of the menu (replace the default style)
 #
-# 1 [IN]      handle                     - a name/handle of the menu
-# 2 [IN][OPT] separator.show             - {true/false} whether to print the menu's
-#                                          separator (true by default)
-# 3 [IN][OPT] separator.symbol           - separator symbol ('-' by default)
-# 4 [IN][OPT] name.header                - menu's name header (' * ' by default)
-# 5 [IN][OPT] name.footer                - menu's name footer (':' by default)
-# 6 [IN][OPT] radio.button.bracket.start - radio.button opening symbol ('(' by default)
-# 7 [IN][OPT] radio.button.bracket.end   - radio.button closing symbol (')' by default)
-# 8 [IN][OPT] check.button.bracket.start - check.button opening symbol ('[' by default)
-# 9 [IN][OPT] check.button.bracket.end   - check.button closing symbol (']' by default)
+# [IN]      handle                     - a name/handle of the menu
+# [IN][OPT] separator.show             - {true/false} whether to print the
+#                                        menu's separator (true by default)
+# [IN][OPT] separator.symbol           - '-' by default
+# [IN][OPT] name.header                - ' * ' by default
+# [IN][OPT] name.footer                - ':' by default
+# [IN][OPT] radio.button.bracket.start - '(' by default
+# [IN][OPT] radio.button.bracket.end   - ')' by default
+# [IN][OPT] check.button.bracket.start - '[' by default
+# [IN][OPT] check.button.bracket.end   - ']' by default
 #
-# Remark: 'default' can be used to specify the default argument
+# Remark: 'default' can be passed as any [OPT] argument, which will set the
+#         default value for the corresponding style parameter
 #
 # -----------------------------------------------------------------------------
 MENU.SetStyleEx() {
@@ -445,27 +465,26 @@ MENU._add_item() {
 }
 
 # -----------------------------------------------------------------------------
-# Add a item into a menu
+# Add an item into a menu
 #
 # [IN]      handle   - a handle of the menu
-# [IN]      name     - a name of an item to be added into the menu
-# [IN][OPT] alias    - an alias to be created that selects the item
+# [IN]      name     - a name of an item to be added into the menu;
+#                      name w/ spaces is suported, e.g. 'Box mode 1'
+# [IN][OPT] alias    - an alias to be created that selects the item;
+#                      alias cannot have a space in the name
 # [IN][OPT] callback - a function to be called when the item is selected
 #
 # Remark: The 'alias' parameter creates the alias for the item unless the alias
 #         already exists in the environment; If 'alias' is part of the name,
-#         for example item item = 'MyItem1' alias = 'em1', then the alias 'em1'
+#         for example name = 'MyItem1' and alias = 'em1', then the alias 'em1'
 #         will be hightlighted (underlined) when displayed.
-#
-# Remark: When the item's 'callback' is called there are 2 arguments passed
-#         into the callbak: [IN] name - the menu name and [IN] item - the
-#         selected item name;
 #
 # Remark: When 'callback' function is called it has 3 arguments passed in:
 #
-# [IN]      handle - the menu's name/handle
-# [IN]      name   - the name of the selected item
-# [IN][OPT] state  - {on, off} item's state (check.button type only)
+# Callback():
+#   $1 [IN]      handle - the menu's name/handle
+#   $2 [IN]      name   - the name of the selected item
+#   $3 [IN][OPT] state  - {on, off} item's state (check.button type only)
 #
 # Example:
 #
@@ -714,6 +733,10 @@ MENU.Show() {
     eval "${MENUEX['styles']}"
     eval "${map["$1"]}"
 
+    local text_color_ref=${context['foreground.color']}
+    local text_color=${styles["$text_color_ref"]}
+    printf ${text_color}
+
     if [ "${context['is.sub.menu']}" == 'true' ]; then
         local parent=${context['parent.menu']}
         MENU._log_warning "'$1' is a sub menu. Show the parent '$parent' menu instead"
@@ -749,7 +772,9 @@ MENU.Show() {
         eval "${context['items']}"
 
         if [ "${context['name']}" != 'MENU.Null' ]; then
-            printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['reset']}}${context['name.footer']} "
+            printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['rmul']}}"
+            printf ${text_color}
+            printf "${context['name.footer']} "
         fi
 
         # Store the main menu's callback to be called later
@@ -765,7 +790,7 @@ MENU.Show() {
         local radio_spaces=$(MENU._string_pad '' ${#context['radio.button.symbol']})
 
         if [ "$show_alias" == 'true' ]; then
-            printf '\n'
+            printf "\n"
         fi
 
         for i in "${!items[@]}"; do
@@ -789,7 +814,7 @@ MENU.Show() {
 
             local type=${item['type']}
             if [ "$type" == 'ln.break' ]; then
-                printf '\n'
+                printf "\n"
                 if [ "${context['name']}" != 'MENU.Null' ] || [ "${context['is.sub.menu']}" == 'true' ]; then
                     printf "$parent_header_pad"
                 fi
@@ -798,17 +823,17 @@ MENU.Show() {
 
             if [ "$type" == 'divider' ]; then
                 local divider=${context['divider']}
-                printf "$divider "
+                printf ${text_color}"$divider "
                 continue;
             fi
 
             if [ "$type" == 'label' ]; then
-                printf "$name "
+                printf ${text_color}"$name "
                 continue;
             fi
 
             local alias=${item['alias']}
-            local color_ref=${context['select.color']}
+            local color_ref=${context['highlighter.color']}
             local color=${styles["$color_ref"]}
             local selected=${context['selected']}
 
@@ -819,7 +844,7 @@ MENU.Show() {
                     # '(*) Name '
                     printf "${color}${styles['bold']}${context['radio.button.bracket.start']}"
                     printf "${context['radio.button.symbol']}${context['radio.button.bracket.end']} "
-                    printf "${name/$alias/$hi}${styles['reset']} "
+                    printf "${name/$alias/$hi}${styles['reset']} ${text_color}"
 
                     # Store the radio button item's callback to be called later
                     if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
@@ -832,7 +857,7 @@ MENU.Show() {
                 else
                     # '( ) Name '
                     printf "${context['radio.button.bracket.start']}$radio_spaces${context['radio.button.bracket.end']} "
-                    printf "${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                    printf "${name/$alias/${styles['smul']}$alias${styles['rmul']}} "
                 fi
                 continue;
             fi
@@ -844,7 +869,7 @@ MENU.Show() {
 
                     # '[x] Name '
                     printf "${color}${styles['bold']}${context['check.button.bracket.start']}${context['check.button.symbol']}"
-                    printf "${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
+                    printf "${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} ${text_color}"
 
                     if [ "$mode" == 'checked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                         callbacks[$idx]=${item['callback']}
@@ -854,7 +879,7 @@ MENU.Show() {
                 else
                     # '[ ] Name '
                     printf "${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
-                    printf "${name/$alias/${styles['smul']}$alias${styles['reset']}} "
+                    printf "${name/$alias/${styles['smul']}$alias${styles['rmul']}} "
 
                     if [ "$mode" == 'unchecked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                         callbacks[$idx]=${item['callback']}
@@ -900,7 +925,8 @@ MENU.Show() {
         break
     done
 
-    printf '\n'
+    printf "\n"
+    printf ${styles['reset']}
 
     # Last, call all the callbacks with its arguments that needs to be called
     for i in "${!callbacks[@]}"; do
@@ -1111,6 +1137,7 @@ MENU._separator() {
     fi
 
     eval "${MENUEX['map']}"
+    eval "${MENUEX['styles']}"
     eval "${map["$1"]}"
 
     # if it's a sub menu then we have to use the parent's menu width
@@ -1124,10 +1151,14 @@ MENU._separator() {
     [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width.max']}
 
     if [ "${context['separator.show']}" == 'true' ]; then
+        local text_color_ref=${context['foreground.color']}
+        local text_color=${styles["$text_color_ref"]}
         ((width--)) # compensation for the way printf works
         cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
+        printf ${text_color}
         eval $cmd
-        echo ""
+        printf "\n"
+        printf ${styles['reset']}
     fi
 }
 
