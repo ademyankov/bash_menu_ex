@@ -238,7 +238,7 @@ DEMO.Create() {
     # Alias 'nux' can take additional optional arguments:
     #
     # 1 [OPT]  flag1     - {true, false} whether to call the main menu's callback
-    # 2 [OPT]   |   mode - call-mode of the check button callbacks {no(false), all(true), checked, unchecked}
+    # 2 [OPT]   |   mode - call-mode of the check button callbacks {no(false), all(true), on, off}
     # > nux    true no
     #
     # Alias 'nux' usage examples:
@@ -262,7 +262,7 @@ DEMO.Create() {
     # 3 [OPT]     |     |   show                 - whether to show the menu after the item has been selected/checked
     # 4 [OPT]     |     |    |    flag1          - whether to call the main menu's callback
     # 5 [OPT]     |     |    |     |   flag2     - whether to call the selected radio button item's callback
-    # 6 [OPT]     |     |    |     |    |   mode - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
+    # 6 [OPT]     |     |    |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
     MENU.Select pl_menu v8 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -299,15 +299,15 @@ DEMO.Create() {
     #           handle                - a name/handle of the menu to be used w/ the API
     #             |   flag1           - whether to call the main menu's callback
     #             |     |  flag2      - whether to call the selected radio button item's callback
-    #             |     |    |   mode - call mode of the check button callbacks [no (false), all (true), checked, unchecked]
+    #             |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
     #MENU.Show pl_menu true true all
 
     #
     # mode:
-    #  no (false)   - do not call any callback for any check button itmes
-    #  all (true)   - call all the callbacks for all check button items regardless of the state
-    #  checked      - call all the callbacks for all checked check button items
-    #  unchecked    - call all the callbacks for all un-checked check button items
+    #  no (false) - do not call any callback for any check button itmes
+    #  all (true) - call all the callbacks for all the check button items regardless of the state
+    #  on         - call all the callbacks for all on (checked) check button items
+    #  off        - call all the callbacks for all off (un-checked) check button items
     #
     # -----------------------------------------------------------------------------------------------------------------
 
@@ -374,7 +374,5 @@ DEMO.Create
 # Display all the menus and calls all the item's callbacks, which sets the environment,
 # controlled by the menus. It's like setting everything up into a default state
 MENU.ShowAll true true true all
-
-
 
 # ---------------------------------------------------------------------------------------------------------------------

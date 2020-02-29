@@ -340,7 +340,7 @@ MENU.SetStyleEx() {
 
 # -----------------------------------------------------------------------------
 # Add a child menu into the parent menu. Allows to create independently
-# functioning radio buttons in the same menu
+# operating radio buttons in the same menu
 #
 # [IN] parent - name of the main (parent) menu
 # [IN] child  - a menu to serve as a sub (child) menu for the parent menu
@@ -465,14 +465,14 @@ MENU._add_item() {
 }
 
 # -----------------------------------------------------------------------------
-# Add an item into a menu
+# Add a radio button into a menu
 #
-# [IN]      handle   - a handle of the menu
-# [IN]      name     - a name of an item to be added into the menu;
+# [IN]      handle   - a handle to the menu
+# [IN]      name     - a name of the radio button to be added into the menu;
 #                      name w/ spaces is suported, e.g. 'Box mode 1'
-# [IN][OPT] alias    - an alias to be created that selects the item;
-#                      alias cannot have a space in the name
-# [IN][OPT] callback - a function to be called when the item is selected
+# [IN][OPT] alias    - an alias to be created that selects the radio button;
+#                      alias cannot have spaces in the alias' name
+# [IN][OPT] callback - a function to be called when the button is selected
 #
 # Remark: The 'alias' parameter creates the alias for the item unless the alias
 #         already exists in the environment; If 'alias' is part of the name,
@@ -502,6 +502,12 @@ MENU.AddRadioButton() {
     ${cmd}
 }
 
+# -----------------------------------------------------------------------------
+# Add a check button into a menu
+#
+# Remark: look AddRadioButton documentation for the parameters description
+#
+# -----------------------------------------------------------------------------
 MENU.AddCheckButton() {
     local menu_name=$1
     local item_name="$2"
@@ -510,11 +516,24 @@ MENU.AddCheckButton() {
     ${cmd}
 }
 
+# -----------------------------------------------------------------------------
+# Add a line break into a menu
+#
+# [IN] handle - a handle to the menu
+#
+# -----------------------------------------------------------------------------
 MENU.AddLnBreak() {
     local cmd="MENU._add_item ln.break $*"
     ${cmd}
 }
 
+# -----------------------------------------------------------------------------
+# Add a label (simple text) into a menu
+#
+# [IN] handle - a handle to the menu
+# [IN] label  - a text (lable) to be added into the menu
+#
+# -----------------------------------------------------------------------------
 MENU.AddLabel() {
     local menu_name=$1
     local item_name="$2"
@@ -523,29 +542,45 @@ MENU.AddLabel() {
     ${cmd}
 }
 
+# -----------------------------------------------------------------------------
+# Add a label (simple text) into a menu
+#
+# [IN] handle - a handle to the menu
+#
+# -----------------------------------------------------------------------------
 MENU.AddDivider() {
     local cmd="MENU._add_item divider $*"
     ${cmd}
 }
 
 # -----------------------------------------------------------------------------
-# Selects an item in the menu
+# Mark an item in the menu as selected, for a radio button, or checked, for
+# a check button
 #
-# [IN]      arg1  - name of the menu
-# [IN]      arg2  - name of the item to be selected
+# [IN] handle - a handle to the menu
+# [IN] name   - name of the item to be marked as selected
 #
 # The rest of the arguments are 'false' by default:
 #
-# [IN][OPT] show  - {true/false} whether to call MENU.Show
-# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
-# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
-# [IN][OPT] mode  - call-mode of all the check button item's callbacks
+# [IN][OPT] show  - {true, false} whether to display the menu
+# [IN][OPT] flag1 - {true, false} whether to call the main menu's callback
+# [IN][OPT] flag2 - {true, false} whether to call the selected item's callback
+# [IN][OPT] mode  - call-mode of all the check button item's callbacks:
+#            + all(true) : call the callbacks of all the check buttons
+#            + no(false) : do not call the check button's callbacks
+#            + on        : call the callbacks of all the check buttons
+#                          in the 'on' (checked) state
+#            + off       : call the callbacks of all the check buttons
+#                          in the 'off' (unchecked) state
 #
-# DEMO: For example, the following command selects 'Release' radio.button in
+# Remark: By default, .Select simply marks the item as selected and it does not
+# display the menu or trigger the item's callback
+#
+# DEMO: For example, the following command selects 'Release' radio button in
 #       the demo 'Build' menu, shows the 'Build' menu, and calls the 'Release'
 #       radio.button's callbacks:
 #
-# > MENU.Select build_menu Release true false true fals
+# > MENU.Select build_menu Release true false true
 #
 # -----------------------------------------------------------------------------
 MENU.Select() {
@@ -625,26 +660,27 @@ MENU._select() {
 }
 
 # -----------------------------------------------------------------------------
-# Performs an operation for all the check.button items in the menu
+# Performs an operation for all the check button items in the menu
 #
-# [IN] name - a name/handle of the menu
-# [IN] operation - a type of operation to perform on all the check.buttons:
-#       check   - check all the check.button items
-#       uncheck - un-check all the check.button itmes
-#       flip    - flip the state of all the check.button itmes
+# [IN] name      - a handle to the menu
+# [IN] operation - a type of operation to be performed on all the check buttons
+#       + on   : check all the check.button items
+#       + off  : un-check all the check.button itmes
+#       + flip : flip the state of all the check.button itmes
 #
 # The rest of the arguments are 'false' by default:
 #
-# [IN][OPT] show  - {true/false} whether to call MENU.Show
-# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
-# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
-# [IN][OPT] mode  - call-mode of all the check.button item's callbacks
+# [IN][OPT] show  - {true, false} whether to display the menu
+# [IN][OPT] flag1 - {true, false} whether to call the main manu's callback
+# [IN][OPT] flag2 - {true, false} whether to call the selected item's callback
+# [IN][OPT] mode  - call-mode of all the check button item's callbacks;
+#                   look at .Select documentation for mode options
 #
-# DEMO: For example, the following command flips all the check.buttons in the
-#       demo 'Build' menu, shows the 'Build' menu, and calls all the checked
-#       check.button's callbacks:
+# DEMO: For example, the following command flips all the check buttons in the
+#       demo 'Build' menu, shows the 'Build' menu, and calls all the 'on'
+#       (checked) check button's callbacks:
 #
-# > MENU.CheckButtonForAll build_menu flip true false false checked
+# > MENU.CheckButtonForAll build_menu flip true false false on
 #
 # -----------------------------------------------------------------------------
 MENU.CheckButtonForAll() {
@@ -697,28 +733,27 @@ MENU.CheckButtonForAll() {
 }
 
 # -----------------------------------------------------------------------------
-# Displays the menu
+# Display the menu
 #
-# [IN] name - a name/handle of the menu
+# [IN] name - a handle to the menu
 #
 # The rest of the arguments are 'false' by default:
 #
-# [IN][OPT] flag1 - {true/false} whether to call the main manu's callback
-# [IN][OPT] flag2 - {true/false} whether to call the selected item's callback
+# [IN][OPT] flag1 - {true, false} whether to call the main menu's callback
+# [IN][OPT] flag2 - {true, false} whether to call the selected item's callback
 # [IN][OPT] mode  - call-mode of all the check button item's callbacks:
-#            no (false)   - do not call any callback for any item
-#            all (true)   - call all the callbacks for all check.button items
+#            + all (true) : call the callbacks of all the check buttons
 #                           regardless of its state
-#            current      - call the callback of the check.button items that
-#                           changes the state (.Select command only)
-#            checked      - call all the callbacks for all checked check.buttons
-#            unchecked    - call all the callbacks for all un-checked
-#                           check.buttons
+#            + no( false) : do not call the check button's callbacks
+#            + on         : call the callbacks of all the check buttons
+#                           in the 'on' (checked) state
+#            + off        : call the callbacks of all the check buttons
+#                           in the 'off' (unchecked) state
 #
 # DEMO: For example, the following command simply shows/displays the demo
 #       'PLATFORM' menu w/o calling any callbacks:
 #
-# > MENU.Show pl_menu false false false
+# > MENU.Show pl_menu
 #
 # -----------------------------------------------------------------------------
 MENU.Show() {
@@ -871,7 +906,7 @@ MENU.Show() {
                     printf "${color}${styles['bold']}${context['check.button.bracket.start']}${context['check.button.symbol']}"
                     printf "${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} ${text_color}"
 
-                    if [ "$mode" == 'checked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                    if [ "$mode" == 'on' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
@@ -881,7 +916,7 @@ MENU.Show() {
                     printf "${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
                     printf "${name/$alias/${styles['smul']}$alias${styles['rmul']}} "
 
-                    if [ "$mode" == 'unchecked' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                    if [ "$mode" == 'off' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
