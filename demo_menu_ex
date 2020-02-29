@@ -350,19 +350,24 @@ DEMO.Create() {
     #
     # Demo menu 'LOGS'
     #
+    # >LOGS -h will show all the aliases created
+    #
+    # Might be helpfull since aliases for LOGS menu will not be underlined
+    # because the lower/upper case does not technically match
+    #
 
     MENU.Create logs_menu LOGS LOGS
     MENU.SetStyle logs_menu default by.largest.item
 
-    MENU.AddRadioButton logs_menu FATAL $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu SEVERE $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu WARNING $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu INFO $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu FATAL fatal DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu SEVERE severe DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu WARNING warning DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu INFO info DEMO.LogsCallback
     MENU.AddLnBreak logs_menu
     MENU.AddRadioButton logs_menu FINE $null DEMO.LogsCallback
     MENU.AddRadioButton logs_menu FINER $null DEMO.LogsCallback
     MENU.AddRadioButton logs_menu FINEST $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu OFF $null DEMO.LogsCallback
+    MENU.AddRadioButton logs_menu OFF off DEMO.LogsCallback
 
     MENU.Select logs_menu INFO false
 

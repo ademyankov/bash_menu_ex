@@ -764,15 +764,27 @@ MENU.Show() {
         local check_spaces=$(MENU._string_pad '' ${#context['check.button.symbol']})
         local radio_spaces=$(MENU._string_pad '' ${#context['radio.button.symbol']})
 
+        if [ "$show_alias" == 'true' ]; then
+            printf '\n'
+        fi
+
         for i in "${!items[@]}"; do
             eval "${items["$i"]}"
 
             local name=${item['name']}
+            if [ "$show_alias" == 'true' ]; then
+                if [ "${item['alias']}" != 'MENU.Null' ]; then
+                    name+=" - '${item['alias']}'"
+                fi
+                printf "   > $name\n"
+                continue
+            fi
+
             if [ "${context['align']}" == 'by.largest.item' ] && [ "${item['type']}" != 'label' ]; then
                 local sz=${context['item.length.max']}
-                ((sz -= ${#item['name']}))
+                ((sz -= ${#name}))
                 local pad=$(MENU._string_pad '' $sz)
-                name=${item['name']}$pad
+                name=${name}$pad
             fi
 
             local type=${item['type']}
@@ -1125,9 +1137,15 @@ MENU._show() {
     [[ $# -gt 5 ]] && f2=$6 || f2='false'
     [[ $# -gt 6 ]] && mode=$7 || mode='false'
 
+    if [[ $# -gt 4 ]] && [[ "$5" == '-h' ]]; then
+        show_alias='true'
+    fi
+
     MENU._separator $1
     MENU.Show $1 $f1 $f2 $mode
     MENU._separator $1
+
+    unset show_alias
 }
 
 MENU._debug_print() {
