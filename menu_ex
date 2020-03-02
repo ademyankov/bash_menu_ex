@@ -17,7 +17,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Release'
+MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -196,13 +196,22 @@ MENU._ctor() {
         styles['cyan']=`tput setaf 6`
         styles['white']=`tput setaf 7`
 
+        styles['grey']=`tput setaf 8`
+        styles['hi.red']=`tput setaf 9`
+        styles['hi.green']=`tput setaf 10`
+        styles['hi.yellow']=`tput setaf 11`
+        styles['hi.blue']=`tput setaf 12`
+        styles['hi.magenta']=`tput setaf 13`
+        styles['hi.cyan']=`tput setaf 14`
+        styles['hi.white']=`tput setaf 15`
+
         # To use some cool custom colors:
         # 1. run this command in the console
         # for c in {0..255}; do tput setaf $c; tput setaf $c | cat -v; echo =$c; done
         # 2. deside the colors you want to use
         # 3. add them into the styles table w/ some unique names
-        styles['custom1']=`tput setaf 248`
-        styles['custom2']=`tput setaf 75`
+        styles['custom1']=`tput setaf 75`
+        styles['custom2']=`tput setaf 87`
         # 4. use MENU.StyleEx function to set the colors for the menu
 
         styles['reset']=`tput sgr0`
@@ -268,9 +277,9 @@ MENU.SetStyle() {
     # By default
     context['divider']='|'
     context['align']='none'
-    context['background.color']='custom1'
-    context['foreground.color']='custom1'
-    context['highlighter.color']='custom2'
+    context['background.color']='black'
+    context['foreground.color']='white'
+    context['highlighter.color']='hi.white'
     context['radio.button.symbol']='♦'
     context['check.button.symbol']='x'
 
@@ -768,9 +777,9 @@ MENU.Show() {
     eval "${MENUEX['styles']}"
     eval "${map["$1"]}"
 
-    local text_color_ref=${context['foreground.color']}
-    local text_color=${styles["$text_color_ref"]}
-    printf ${text_color}
+    local ref=${context['foreground.color']}
+    local foreground=${styles["$ref"]}
+    printf ${foreground}
 
     if [ "${context['is.sub.menu']}" == 'true' ]; then
         local parent=${context['parent.menu']}
@@ -808,7 +817,7 @@ MENU.Show() {
 
         if [ "${context['name']}" != 'MENU.Null' ]; then
             printf "${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['rmul']}}"
-            printf ${text_color}
+            printf ${foreground}
             printf "${context['name.footer']} "
         fi
 
@@ -856,30 +865,30 @@ MENU.Show() {
                 continue
             fi
 
-            if [ "$type" == 'divider' ]; then
-                local divider=${context['divider']}
-                printf ${text_color}"$divider "
-                continue;
-            fi
-
             if [ "$type" == 'label' ]; then
-                printf ${text_color}"$name "
+                printf ${foreground}"$name "
                 continue;
             fi
 
             local alias=${item['alias']}
-            local color_ref=${context['highlighter.color']}
-            local color=${styles["$color_ref"]}
+            ref=${context['highlighter.color']}
+            local highlighter=${styles["$ref"]}
             local selected=${context['selected']}
+
+            if [ "$type" == 'divider' ]; then
+                local divider=${context['divider']}
+                printf ${styles['bold']}"$divider ${styles['reset']}"
+                continue;
+            fi
 
             if [ "$type" == 'radio.button' ]; then
                 if [ "${item['name']}" == "$selected" ]; then
-                    local hi=${styles['smul']}${item['alias']}${styles['rmul']}
+                    local hi=${highlighter}${styles['smul']}${item['alias']}${styles['rmul']}
 
                     # '(*) Name '
-                    printf "${color}${styles['bold']}${context['radio.button.bracket.start']}"
+                    printf "${highlighter}${context['radio.button.bracket.start']}"
                     printf "${context['radio.button.symbol']}${context['radio.button.bracket.end']} "
-                    printf "${name/$alias/$hi}${styles['reset']} ${text_color}"
+                    printf "${name/$alias/$hi}${styles['reset']} "
 
                     # Store the radio button item's callback to be called later
                     if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
@@ -891,7 +900,7 @@ MENU.Show() {
                     fi
                 else
                     # '( ) Name '
-                    printf "${context['radio.button.bracket.start']}$radio_spaces${context['radio.button.bracket.end']} "
+                    printf "${foreground}${context['radio.button.bracket.start']}$radio_spaces${context['radio.button.bracket.end']} "
                     printf "${name/$alias/${styles['smul']}$alias${styles['rmul']}} "
                 fi
                 continue;
@@ -900,11 +909,11 @@ MENU.Show() {
             if [ "$type" == 'check.button' ]; then
                 local mode=$4
                 if [ "${item['checked']}" == 'on' ]; then
-                    local hi=${styles['smul']}${item['alias']}${styles['rmul']}
+                    local hi=${highlighter}${styles['smul']}${item['alias']}${styles['rmul']}
 
                     # '[x] Name '
-                    printf "${color}${styles['bold']}${context['check.button.bracket.start']}${context['check.button.symbol']}"
-                    printf "${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} ${text_color}"
+                    printf "${highlighter}${context['check.button.bracket.start']}${context['check.button.symbol']}"
+                    printf "${context['check.button.bracket.end']} ${name/$alias/$hi}${styles['reset']} "
 
                     if [ "$mode" == 'on' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
                         callbacks[$idx]=${item['callback']}
@@ -913,7 +922,7 @@ MENU.Show() {
                     fi
                 else
                     # '[ ] Name '
-                    printf "${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
+                    printf "${foreground}${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
                     printf "${name/$alias/${styles['smul']}$alias${styles['rmul']}} "
 
                     if [ "$mode" == 'off' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
@@ -1186,11 +1195,11 @@ MENU._separator() {
     [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width.max']}
 
     if [ "${context['separator.show']}" == 'true' ]; then
-        local text_color_ref=${context['foreground.color']}
-        local text_color=${styles["$text_color_ref"]}
         ((width--)) # compensation for the way printf works
         cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
-        printf ${text_color}
+        local ref=${context['foreground.color']}
+        local foreground=${styles["$ref"]}
+        printf $foreground
         eval $cmd
         printf "\n"
         printf ${styles['reset']}
@@ -1242,6 +1251,11 @@ MENU._debug_print_all() {
     eval "${MENUEX['map']}"
     for key in "${!map[@]}"; do
         MENU._debug_print $key
+    done
+
+    eval "${MENUEX['styles']}"
+    for key in "${!styles[@]}"; do
+        echo "styles['$key'] = '${styles[$key]}xxx${styles['reset']}'"
     done
 }
 
