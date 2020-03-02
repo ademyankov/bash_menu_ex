@@ -205,13 +205,13 @@ MENU._ctor() {
         styles['hi.cyan']=`tput setaf 14`
         styles['hi.white']=`tput setaf 15`
 
-        # To use some cool custom colors:
+        # To use some cool custom colors (if your term supports it):
         # 1. run this command in the console
         # for c in {0..255}; do tput setaf $c; tput setaf $c | cat -v; echo =$c; done
         # 2. deside the colors you want to use
         # 3. add them into the styles table w/ some unique names
-        styles['custom1']=`tput setaf 75`
-        styles['custom2']=`tput setaf 87`
+        styles['custom1']=`tput setaf 109`
+        styles['custom2']=`tput setaf 103`
         # 4. use MENU.StyleEx function to set the colors for the menu
 
         styles['reset']=`tput sgr0`
@@ -279,7 +279,7 @@ MENU.SetStyle() {
     context['align']='none'
     context['background.color']='black'
     context['foreground.color']='white'
-    context['highlighter.color']='hi.white'
+    context['highlighter.color']='hi.green'
     context['radio.button.symbol']='♦'
     context['check.button.symbol']='x'
 
@@ -777,8 +777,7 @@ MENU.Show() {
     eval "${MENUEX['styles']}"
     eval "${map["$1"]}"
 
-    local ref=${context['foreground.color']}
-    local foreground=${styles["$ref"]}
+    local foreground=${styles[${context['foreground.color']}]}
     printf ${foreground}
 
     if [ "${context['is.sub.menu']}" == 'true' ]; then
@@ -865,19 +864,18 @@ MENU.Show() {
                 continue
             fi
 
+            local alias=${item['alias']}
+            local highlighter=${styles[${context['highlighter.color']}]}
+            local selected=${context['selected']}
+
             if [ "$type" == 'label' ]; then
                 printf ${foreground}"$name "
                 continue;
             fi
 
-            local alias=${item['alias']}
-            ref=${context['highlighter.color']}
-            local highlighter=${styles["$ref"]}
-            local selected=${context['selected']}
-
             if [ "$type" == 'divider' ]; then
                 local divider=${context['divider']}
-                printf ${styles['bold']}"$divider ${styles['reset']}"
+                printf "$divider ${styles['reset']}"
                 continue;
             fi
 
@@ -1197,8 +1195,7 @@ MENU._separator() {
     if [ "${context['separator.show']}" == 'true' ]; then
         ((width--)) # compensation for the way printf works
         cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
-        local ref=${context['foreground.color']}
-        local foreground=${styles["$ref"]}
+        local foreground=${styles[${context['foreground.color']}]}
         printf $foreground
         eval $cmd
         printf "\n"
