@@ -196,7 +196,6 @@ DEMO.Create() {
     # 8 [OPT]       |      |        |    |       |    |   |  check.symbol - the check symbol for the check button when checked
     #MENU.SetStyle pl_menu default none default cyan red '○' default
     #MENU.SetStyle pl_menu default by.largest.item
-    #MENU.SetStyle pl_menu default none default custom1 custom2
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -317,6 +316,8 @@ DEMO.Create() {
     # -----------------------------------------------------------------------------------------------------------------
 
     MENU.Create build_menu Build Build DEMO.BuildCallback
+    #MENU.SetStyle build_menu default none light.blue
+    MENU.SetStyle build_menu default none custom.background custom.foreground custom.highlighter
 
     #
     # if there is no alias for the menu you can call it through
