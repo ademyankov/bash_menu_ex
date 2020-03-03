@@ -17,7 +17,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Release'
+MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -224,7 +224,7 @@ MENU._ctor() {
         # 4. use MENU.StyleEx function to set the colors for the menu
         styles['custom.background']=17
         styles['custom.foreground']=8
-        styles['custom.highlighter']=226
+        styles['custom.highlighter']=45
 
         styles['dim']=`tput dim`    # Select dim (half-bright) mode
         styles['smul']=`tput smul`  # Enable underline mode
@@ -653,9 +653,8 @@ MENU.Select() {
     if [ "$show" == 'true' ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
+        unset current_item
     fi
-
-    unset current_item
 }
 
 # arguments are comming from the item's alias: $*
