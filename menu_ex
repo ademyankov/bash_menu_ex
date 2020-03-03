@@ -17,7 +17,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Debug'
+MENUEX['build']='Release'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -247,7 +247,10 @@ MENU._ctor() {
 }
 
 # -----------------------------------------------------------------------------
-# Set the style of the menu (replace the default style)
+# Set the style of the menu (replace the default style);
+#
+# For the list of standard colors, look at MENU._ctor styles[] array; there is
+# also an explanation how to create and use custom colors if needed
 #
 # [IN]      handle              - a name/handle of the menu to be used w/ the API
 # [IN][OPT] divider             - a divider to be used w/ .AddDivider ('|' by default)
@@ -258,7 +261,7 @@ MENU._ctor() {
 # [IN][OPT] background.color    - the color of the background
 #                                 (black by default)
 # [IN][OPT] foreground.color    - the color of the text
-#                                 (white by default)
+#                                 (gray by default)
 # [IN][OPT] highlighter.color   - the color of an item selected
 #                                 (green by default)
 # [IN][OPT] radio.button.symbol - a symbol for the radio.button selected
@@ -268,6 +271,8 @@ MENU._ctor() {
 #
 # Remark: 'default' can be passed as any [OPT] argument, which will set the
 #         default value for the corresponding style parameter
+#
+# Remark: to create and use a custom color, look at MENU._ctor styles[] array
 #
 # Example:
 #
@@ -653,7 +658,7 @@ MENU.Select() {
     if [ "$show" == 'true' ]; then
         MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
         MENU.Show $1 $flag1 $flag2 $mode
-        unset current_item
+        current_item=''
     fi
 }
 
@@ -673,7 +678,7 @@ MENU._select() {
     MENU.Show $1 $f1 $f2 current
     MENU._separator $1
 
-    unset current_item
+    current_item=''
 }
 
 # -----------------------------------------------------------------------------
@@ -795,6 +800,10 @@ MENU.Show() {
     local -a arguments=()
     local idx=0
 
+    [[ $# -gt 1 ]] && local flag1=$2 || local flag1='false'
+    [[ $# -gt 2 ]] && local flag2=$3 || local flag2='false'
+    [[ $# -gt 3 ]] && local mode=$4 || local mode='false'
+
     # Is used to 'space'-pad the menu after line break
     local parent_header_pad=''
     if [ "${context['name']}" != 'MENU.Null' ]; then
@@ -827,7 +836,7 @@ MENU.Show() {
         fi
 
         # Store the main menu's callback to be called later
-        if [ "$2" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+        if [ "$flag1" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
             callbacks[$idx]=${context['callback']}
             [[ "${context['name']}" != 'MENU.Null' ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
             ((idx++))
@@ -897,12 +906,22 @@ MENU.Show() {
                     printf "\e[0m"
 
                     # Store the radio button item's callback to be called later
-                    if [ "$3" == 'true' ] && [ "${item['callback']}" != 'MENU.Null' ]; then
-                        if [ ! $current_item ] || [ "$current_item" == "${item['name']}" ]; then
-                            callbacks[$idx]=${item['callback']}
-                            arguments[$idx]="$1 ${item['name']}"
-                            ((idx++))
+                    MENU._log_ln
+                    MENU._log_warning "current_item: $current_item, mode: $mode, flag2=$flag2"
+
+                    local add_callback='false'
+                    if [ "${item['callback']}" != 'MENU.Null' ]; then
+                        if [ "$mode" == 'current' ]; then
+                            [ "$current_item" == "${item['name']}" ] && add_callback='true'
+                        else
+                            [ "$flag2" == 'true' ] && add_callback='true'
                         fi
+                    fi
+
+                    if [ "$add_callback" == 'true' ]; then
+                        callbacks[$idx]=${item['callback']}
+                        arguments[$idx]="$1 ${item['name']}"
+                        ((idx++))
                     fi
                 else
                     # '( ) Name '
@@ -914,7 +933,6 @@ MENU.Show() {
             fi
 
             if [ "$type" == 'check.button' ]; then
-                local mode=$4
                 if [ "${item['checked']}" == 'on' ]; then
                     local hi=${highlighter}${styles['smul']}${item['alias']}${styles['rmul']}
 
@@ -940,18 +958,22 @@ MENU.Show() {
                     fi
                 fi
 
-                if [ "$current_item" == "${item['name']}" ] && [ "$mode" == 'current' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
-                    callbacks[$idx]=${item['callback']}
-                    arguments[$idx]="$1 ${item['name']} ${item['checked']}"
-                    ((idx++))
+                MENU._log_ln
+                MENU._log_warning "mode: $mode current_item: $current_item"
+                MENU._log_info "${item['callback']} ${item['name']} ${item['checked']}"
 
-                    MENU._log_ln
-                    MENU._log_warning "mode: $mode current_item: $current_item"
-                    MENU._log_warning "${item['callback']} ${item['name']} ${item['checked']}"
+                local add_callback='false'
+                if [ "${item['callback']}" != 'MENU.Null' ]; then
+                    if [ "$mode" == 'current' ]; then
+                        [ "$current_item" == "${item['name']}" ] && add_callback='true'
+                    else
+                        if [ "$mode" == 'true' ] || [ "$mode" == 'all' ]; then
+                            add_callback='true'
+                        fi
+                    fi
                 fi
 
-                # Store all the check button item's callbacks to be called later
-                if [ "$mode" == 'all' ] || [ "$mode" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                if [ "$add_callback" == 'true' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     ((idx++))
