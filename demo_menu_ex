@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # include MENU extension class
 source ./menu_ex
@@ -7,7 +7,7 @@ source ./menu_ex
 #
 # Demo Example:
 #
-# Look at 'DEMO.Create' - to see how the demo menus are created
+# Look at 'MENU_Create' - to see how the demo menus are created
 #
 # Aliases:
 #
@@ -22,62 +22,62 @@ source ./menu_ex
 
 # [IN] handle - the menu's name/handle
 # [IN] name   - the menu's name (if specified)
-DEMO.PlCallback() {
+MENU_PlCallback() {
     echo " PL.$2..."
     echo ' ...'
 }
 
 # [IN] handle - the menu's name/handle
 # [IN] name   - the item's selected
-DEMO.PlLinuxCallback() {
+MENU_PlLinuxCallback() {
     if [ "$2" != 'Linux' ]; then
-        MENU._error "Wrong callback!"
+        MENU__error "Wrong callback!"
         return
     fi
     echo " PL.Linux.Callback..."
     echo ' ...'
 }
 
-DEMO.PlQemuCallback() {
+MENU_PlQemuCallback() {
     echo " PL.$2..."
     echo ' ...'
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-DEMO.PlChild1Callback() {
+MENU_PlChild1Callback() {
     echo " PL.It..."
     echo ' ...'
 }
 
-DEMO.PlChild1RadioCallback() {
-    echo " PL.SubMenu.$2..."
+MENU_PlChild1RadioCallback() {
+    echo " PL.SubMENU_$2..."
     echo ' ...'
 }
 
 # [IN]      handle - the menu's name/handle
 # [IN]      name   - the name of the selected item
 # [IN][OPT] state  - {on, off} item's state (check.button type only)
-DEMO.PlChild1CheckCallback() {
-    echo " PL.SubMenu.$2.[$3]..."
+MENU_PlChild1CheckCallback() {
+    echo " PL.SubMENU_$2.[$3]..."
     echo ' ...'
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-DEMO.PlChild2RadioCallback() {
+MENU_PlChild2RadioCallback() {
     echo " PL.Extra.$2..."
     echo ' ...'
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-DEMO.BuildCallback() {
+MENU_BuildCallback() {
     echo " Build.$2..."
     echo ' ...'
 }
 
-DEMO.BuildModeCallback() {
+MENU_BuildModeCallback() {
     echo " Build.$2..."
     case $2 in
         Debug)
@@ -89,7 +89,7 @@ DEMO.BuildModeCallback() {
     esac
 }
 
-DEMO.BuildGccFlagsCallback() {
+MENU_BuildGccFlagsCallback() {
     echo " PL.$2.state.[$3]..."
     case $2 in
         Pedantic)
@@ -112,7 +112,7 @@ DEMO.BuildGccFlagsCallback() {
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-DEMO.LogsCallback() {
+MENU_LogsCallback() {
     echo " LOGS.$2..."
     case $2 in
         FATAL)
@@ -146,9 +146,9 @@ DEMO.LogsCallback() {
 # The Demo Menu
 # ---------------------------------------------------------------------------------------------------------------------
 
-DEMO.Create() {
-    # See menu_ex:'Functions and parameters acronims' for 'MENU.Null' explanation
-    null='MENU.Null'
+MENU_Create() {
+    # See menu_ex:'Functions and parameters acronims' for 'MENU_Null' explanation
+    null='MENU_Null'
 
     #
     # Demo menu 'PLATFORM'
@@ -161,13 +161,13 @@ DEMO.Create() {
     # 2 [OPT]       |     name               - a displayed name of the menu
     # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
     # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
-    MENU.Create pl_menu PLATFORM PL DEMO.PlCallback
-    #MENU.Create pl_menu $null PL MENU.DemoMainMenu
-    #MENU.Create pl_menu $null $null MENU.DemoMainMenu
-    #MENU.Create pl_menu
+    MENU_Create pl_menu PLATFORM PL MENU_PlCallback
+    #MENU_Create pl_menu $null PL MENU_DemoMainMenu
+    #MENU_Create pl_menu $null $null MENU_DemoMainMenu
+    #MENU_Create pl_menu
 
     # -----------------------------------------------------------------------------------------------------------------
-    # Under the hood 'PL' is just an alias for: 'MENU.Show pl_menu'
+    # Under the hood 'PL' is just an alias for: 'MENU_Show pl_menu'
     #
     # 1 [OPT]  flag1           - whether to call the main menu's callback
     # 2 [OPT]   |    flag2     - whether to call the selected radio button item's callback
@@ -194,8 +194,8 @@ DEMO.Create() {
     # 6 [OPT]       |      |        |    |       |  highlighter.color     - the hightlighted items color (green by default)
     # 7 [OPT]       |      |        |    |       |    | radio.symbol      - the select symbol for the radio button when selected
     # 8 [OPT]       |      |        |    |       |    |   |  check.symbol - the check symbol for the check button when checked
-    #MENU.SetStyle pl_menu default none default cyan red '○' default
-    #MENU.SetStyle pl_menu default by.largest.item
+    #MENU_SetStyle pl_menu default none default cyan red '○' default
+    #MENU_SetStyle pl_menu default by.largest.item
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -209,12 +209,12 @@ DEMO.Create() {
     # 7 [OPT]         |       |    |    |    |   | symbol.radio.end        - radio.button closing symbol (')' by default)
     # 8 [OPT]         |       |    |    |    |   |   | symbol.chk.start    - check.button opening symbol ('[' by default)
     # 9 [OPT]         |       |    |    |    |   |   |   |  symbol.chk.end - check.button closing symbol (']' by default)
-    #MENU.SetStyleEx pl_menu true '-' " * " ":" '(' ')' '[' ']'
+    #MENU_SetStyleEx pl_menu true '-' " * " ":" '(' ')' '[' ']'
     #
     # For example:
     #
-    #MENU.SetStyleEx pl_menu true '=' " + '" "':" '[[' ']]' '((' '))'
-    #MENU.SetStyle pl_menu default by.largest.item cyan 'xx' '***'
+    #MENU_SetStyleEx pl_menu true '=' " + '" "':" '[[' ']]' '((' '))'
+    #MENU_SetStyle pl_menu default by.largest.item cyan 'xx' '***'
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
@@ -224,16 +224,16 @@ DEMO.Create() {
     # 2                 |    name               - an item's name to be added into the menu
     # 3 [OPT]           |     |    alias        - an alias to be created that triggers the item's callback
     # 4 [OPT]           |     |     |  callback - a function to be called when an item is selected
-    MENU.AddRadioButton pl_menu Linux nux DEMO.PlLinuxCallback
-    #MENU.AddRadioButton pl_menu Linux $null MENU.DemoPlLinuxCb
-    #MENU.AddRadioButton pl_menu Linux
+    MENU_AddRadioButton pl_menu Linux nux MENU_PlLinuxCallback
+    #MENU_AddRadioButton pl_menu Linux $null MENU_DemoPlLinuxCb
+    #MENU_AddRadioButton pl_menu Linux
     #
     # In the invocation example #2, there is no alias for item 'Linux', so the only way to call it is by using
-    # the .Select command, like so: MENU.Select pl_menu Linux true false true
+    # the .Select command, like so: MENU_Select pl_menu Linux true false true
     # Please, look into .Select command demo to understand all the flags
     #
     # -----------------------------------------------------------------------------------------------------------------
-    # Under the hood 'nux' is just an alias for: 'MENU.Select pl_menu Linux true false true'
+    # Under the hood 'nux' is just an alias for: 'MENU_Select pl_menu Linux true false true'
     #
     # Alias 'nux' can take additional optional arguments:
     #
@@ -248,11 +248,11 @@ DEMO.Create() {
     # > nux true all - all the above + triggers all the check button item's callbacks
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.AddDivider pl_menu
-    MENU.AddLabel pl_menu QEMU:
-    MENU.AddRadioButton pl_menu v8 v8 DEMO.PlQemuCallback
-    MENU.AddRadioButton pl_menu arm32 arm DEMO.PlQemuCallback
-    #MENU.AddRadioButton pl_menu "Name w/ space" ace MENU.DemoPlQemuCb
+    MENU_AddDivider pl_menu
+    MENU_AddLabel pl_menu QEMU:
+    MENU_AddRadioButton pl_menu v8 v8 MENU_PlQemuCallback
+    MENU_AddRadioButton pl_menu arm32 arm MENU_PlQemuCallback
+    #MENU_AddRadioButton pl_menu "Name w/ space" ace MENU_DemoPlQemuCb
 
     # -----------------------------------------------------------------------------------------------------------------
     # Select an item of the menu
@@ -263,39 +263,39 @@ DEMO.Create() {
     # 4 [OPT]     |     |    |    flag1          - whether to call the main menu's callback
     # 5 [OPT]     |     |    |     |   flag2     - whether to call the selected radio button item's callback
     # 6 [OPT]     |     |    |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
-    MENU.Select pl_menu v8 false false true no
+    MENU_Select pl_menu v8 false false true no
     # -----------------------------------------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------------------------------------
     # Create two child menus and add them into the main (parent) PLATFORM menu
     # -----------------------------------------------------------------------------------------------------------------
-    MENU.Create pl_child_menu1 $null $null DEMO.PlChild1Callback
-    #MENU.SetStyle pl_child_menu1 default none default custom1 custom2
+    MENU_Create pl_child_menu1 $null $null MENU_PlChild1Callback
+    #MENU_SetStyle pl_child_menu1 default none default custom1 custom2
 
-    #MENU.AddLabel pl_child_menu1 It:
-    MENU.AddRadioButton pl_child_menu1 Item1 m1 DEMO.PlChild1RadioCallback
-    MENU.AddRadioButton pl_child_menu1 Item2 m2 DEMO.PlChild1RadioCallback
-    MENU.AddRadioButton pl_child_menu1 Item3 m3 DEMO.PlChild1RadioCallback
+    #MENU_AddLabel pl_child_menu1 It:
+    MENU_AddRadioButton pl_child_menu1 Item1 m1 MENU_PlChild1RadioCallback
+    MENU_AddRadioButton pl_child_menu1 Item2 m2 MENU_PlChild1RadioCallback
+    MENU_AddRadioButton pl_child_menu1 Item3 m3 MENU_PlChild1RadioCallback
     # -----------------------------------------------------------------------------------------------------------------
-    MENU.AddDivider pl_child_menu1
-    #MENU.AddLabel pl_child_menu1 Mode:
-    MENU.AddCheckButton pl_child_menu1 Ps1 s1 DEMO.PlChild1CheckCallback
-    MENU.AddCheckButton pl_child_menu1 Nx Nx DEMO.PlChild1CheckCallback
-    MENU.Select pl_child_menu1 Item2 false
-    MENU.Select pl_child_menu1 Ps1 false
+    MENU_AddDivider pl_child_menu1
+    #MENU_AddLabel pl_child_menu1 Mode:
+    MENU_AddCheckButton pl_child_menu1 Ps1 s1 MENU_PlChild1CheckCallback
+    MENU_AddCheckButton pl_child_menu1 Nx Nx MENU_PlChild1CheckCallback
+    MENU_Select pl_child_menu1 Item2 false
+    MENU_Select pl_child_menu1 Ps1 false
     # -----------------------------------------------------------------------------------------------------------------
-    MENU.Create pl_child_menu2
-    #MENU.SetStyle pl_child_menu2 default none default custom1 custom2
+    MENU_Create pl_child_menu2
+    #MENU_SetStyle pl_child_menu2 default none default custom1 custom2
 
-    MENU.AddDivider pl_child_menu2
-    #MENU.AddLabel pl_child_menu2 Extra:
-    MENU.AddRadioButton pl_child_menu2 Sub1 b1 DEMO.PlChild2RadioCallback
-    MENU.AddRadioButton pl_child_menu2 Sub2 b2 DEMO.PlChild2RadioCallback
+    MENU_AddDivider pl_child_menu2
+    #MENU_AddLabel pl_child_menu2 Extra:
+    MENU_AddRadioButton pl_child_menu2 Sub1 b1 MENU_PlChild2RadioCallback
+    MENU_AddRadioButton pl_child_menu2 Sub2 b2 MENU_PlChild2RadioCallback
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.AddDivider pl_menu
-    MENU.AddMenu pl_menu pl_child_menu1
-    MENU.AddMenu pl_menu pl_child_menu2
+    MENU_AddDivider pl_menu
+    MENU_AddMenu pl_menu pl_child_menu1
+    MENU_AddMenu pl_menu pl_child_menu2
 
     # -----------------------------------------------------------------------------------------------------------------
     # Show/display the menu
@@ -304,7 +304,7 @@ DEMO.Create() {
     #             |   flag1           - whether to call the main menu's callback
     #             |     |  flag2      - whether to call the selected radio button item's callback
     #             |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
-    #MENU.Show pl_menu true true all
+    #MENU_Show pl_menu true true all
 
     #
     # mode:
@@ -315,31 +315,31 @@ DEMO.Create() {
     #
     # -----------------------------------------------------------------------------------------------------------------
 
-    MENU.Create build_menu Build Build DEMO.BuildCallback
-    #MENU.SetStyle build_menu default none light.blue
-    MENU.SetStyle build_menu default none custom.background custom.foreground custom.highlighter
+    MENU_Create build_menu Build Build MENU_BuildCallback
+    #MENU_SetStyle build_menu default none light.blue
+    MENU_SetStyle build_menu default none custom.background custom.foreground custom.highlighter
 
     #
     # if there is no alias for the menu you can call it through
     # MENU API directly or create your own alias:
     #
-    # > MENU.Show build_menu
+    # > MENU_Show build_menu
     #
 
     #
     # Demo menu 'Build'
     #
-    MENU.AddRadioButton build_menu Debug debug DEMO.BuildModeCallback
-    MENU.AddRadioButton build_menu Release release DEMO.BuildModeCallback
-    MENU.AddDivider build_menu
-    MENU.AddCheckButton build_menu Pedantic Pedant DEMO.BuildGccFlagsCallback
-    MENU.AddCheckButton build_menu Wall all DEMO.BuildGccFlagsCallback
-    MENU.AddCheckButton build_menu Werror err DEMO.BuildGccFlagsCallback
-    MENU.AddCheckButton build_menu fPIC PIC DEMO.BuildGccFlagsCallback
-    MENU.AddCheckButton build_menu isoC99 iso DEMO.BuildGccFlagsCallback
-    MENU.Select build_menu Debug false
-    MENU.Select build_menu Wall false
-    MENU.Select build_menu Werror false
+    MENU_AddRadioButton build_menu Debug debug MENU_BuildModeCallback
+    MENU_AddRadioButton build_menu Release release MENU_BuildModeCallback
+    MENU_AddDivider build_menu
+    MENU_AddCheckButton build_menu Pedantic Pedant MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu Wall all MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu Werror err MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu fPIC PIC MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu isoC99 iso MENU_BuildGccFlagsCallback
+    MENU_Select build_menu Debug false
+    MENU_Select build_menu Wall false
+    MENU_Select build_menu Werror false
 
     #
     # Demo menu 'LOGS'
@@ -350,35 +350,35 @@ DEMO.Create() {
     # because the lower/upper case does not technically match
     #
 
-    MENU.Create logs_menu LOGS LOGS
-    MENU.SetStyle logs_menu default by.largest.item
+    MENU_Create logs_menu LOGS LOGS
+    MENU_SetStyle logs_menu default by.largest.item
 
-    MENU.AddRadioButton logs_menu FATAL fatal DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu SEVERE severe DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu WARNING warning DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu INFO info DEMO.LogsCallback
-    MENU.AddLnBreak logs_menu
-    MENU.AddRadioButton logs_menu FINE $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu FINER $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu FINEST $null DEMO.LogsCallback
-    MENU.AddRadioButton logs_menu OFF off DEMO.LogsCallback
+    MENU_AddRadioButton logs_menu FATAL fatal MENU_LogsCallback
+    MENU_AddRadioButton logs_menu SEVERE severe MENU_LogsCallback
+    MENU_AddRadioButton logs_menu WARNING warning MENU_LogsCallback
+    MENU_AddRadioButton logs_menu INFO info MENU_LogsCallback
+    MENU_AddLnBreak logs_menu
+    MENU_AddRadioButton logs_menu FINE $null MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINER $null MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINEST $null MENU_LogsCallback
+    MENU_AddRadioButton logs_menu OFF off MENU_LogsCallback
 
-    MENU.Select logs_menu INFO false
+    MENU_Select logs_menu INFO false
 
-    MENU._debug_print_all
+    MENU__debug_print_all
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-alias dev='MENU.ShowAll true'
+alias dev='MENU_ShowAll true'
 
 # Some cool stuff that you can do with the MENU class
-alias flip='MENU._separator build_menu; MENU.CheckButtonForAll build_menu flip true false false all; MENU._separator build_menu'
+alias flip='MENU__separator build_menu; MENU_CheckButtonForAll build_menu flip true false false all; MENU__separator build_menu'
 
-DEMO.Create
+MENU_Create
 
 # Display all the menus and calls all the item's callbacks, which sets the environment,
 # controlled by the menus. It's like setting everything up into a default state
-MENU.ShowAll true true true all
+MENU_ShowAll true true true all
 
 # ---------------------------------------------------------------------------------------------------------------------

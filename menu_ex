@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # -----------------------------------------------------------------------------
 # Customizable console menu to organize different environment settings
@@ -17,7 +17,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Release'
+MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -28,14 +28,14 @@ MENUEX['build']='Release'
 # [OPT] - optional argument
 # [OUT] - output result
 #
-# MENU.Null - is a special string that represents 'no string' for an optional
+# MENU_Null - is a special string that represents 'no string' for an optional
 #             string argument; it can be usefull when an optional string
 #             argument is in the middle of the arguments list, For example:
-#             "MENU.Create menu1 MENU.Null MENU.Null Menu1Function". In case of
-#             "MENU.Create menu1 '' '' Menu1Function" it would be impossible to
+#             "MENU_Create menu1 MENU_Null MENU_Null Menu1Function". In case of
+#             "MENU_Create menu1 '' '' Menu1Function" it would be impossible to
 #             separate one parameter from the others inside the function
 #
-# MENU._lover_case - functions, named in such a way, are private and are not
+# MENU__lover_case - functions, named in such a way, are private and are not
 #                    supposed to be called directly, but nothing prevents it
 #
 # -----------------------------------------------------------------------------
@@ -48,7 +48,7 @@ MENUEX['build']='Release'
 # [OUT] returns the padded string
 #
 # -----------------------------------------------------------------------------
-MENU._string_pad() {
+MENU__string_pad() {
     local len=$(($2 - ${#1}))
     pad=`printf '%*s' "$len" | tr ' ' " "`
     echo "$1$pad"
@@ -61,7 +61,7 @@ MENU._string_pad() {
 # [OUT] returns the converted string
 #
 # -----------------------------------------------------------------------------
-MENU._to_upper() {
+MENU__to_upper() {
     echo "$(echo ${1} | awk '{print toupper($0)}')"
 }
 
@@ -71,19 +71,19 @@ MENU._to_upper() {
 # [IN] string - a log's mode, supported: {INFO, WARNING, SEVERE}
 #
 # -----------------------------------------------------------------------------
-MENU._log() {
+MENU__log() {
     eval "${MENUEX['styles']}"
 
     local marker
     case $1 in
         INFO)
-            marker=$(MENU._color_set ${styles['black']} ${styles['light.green']})
+            marker=$(MENU__color_set ${styles['black']} ${styles['light.green']})
             ;;
         WARNING)
-            marker=$(MENU._color_set ${styles['black']} ${styles['light.yellow']})
+            marker=$(MENU__color_set ${styles['black']} ${styles['light.yellow']})
             ;;
         SEVERE)
-            marker=$(MENU._color_set ${styles['black']} ${styles['light.red']})
+            marker=$(MENU__color_set ${styles['black']} ${styles['light.red']})
             ;;
     esac
 
@@ -93,24 +93,24 @@ MENU._log() {
     printf "$*\n"
 }
 
-MENU._log_ln() {
+MENU__log_ln() {
     [[ "${MENUEX["build"]}" == 'Debug' ]] && echo ''
 }
 
-MENU._log_info() {
-    [[ "${MENUEX["build"]}" == 'Debug' ]] && MENU._log INFO $1
+MENU__log_info() {
+    [[ "${MENUEX["build"]}" == 'Debug' ]] && MENU__log INFO $1
 }
 
-MENU._log_warning() {
-    [[ "${MENUEX["build"]}" == 'Debug' ]] && MENU._log WARNING $1
+MENU__log_warning() {
+    [[ "${MENUEX["build"]}" == 'Debug' ]] && MENU__log WARNING $1
 }
 
-MENU._error() {
-  MENU._log SEVERE $1
+MENU__error() {
+  MENU__log SEVERE $1
 }
 
-MENU._warning() {
-  MENU._log WARNING $1
+MENU__warning() {
+  MENU__log WARNING $1
 }
 
 # -----------------------------------------------------------------------------
@@ -130,29 +130,29 @@ MENU._warning() {
 # [IN] name   - the menu's name (if specified)
 #
 # -----------------------------------------------------------------------------
-MENU.Create() {
-    local ctor="MENU._ctor"
+MENU_Create() {
+    local ctor="MENU__ctor"
     ${ctor}
 
     if [[ $# -lt 1 ]]; then
-        MENU._error "MENU.Create requires more arguments"
+        MENU__error "MENU_Create requires more arguments"
         return
     fi
 
     local -A context=()
-    context['name']='MENU.Null'
-    context['alias']='MENU.Null'
-    context['callback']='MENU.Null'
+    context['name']='MENU_Null'
+    context['alias']='MENU_Null'
+    context['callback']='MENU_Null'
     context['selected']=''          # curently selected radio.button
     context['item.length.max']=0    # the max char length of an item's name
-    context['menu.width']=0         # the length of the longest string in the menu (used for menu's separator)
+    context['MENU_width']=0         # the length of the longest string in the menu (used for menu's separator)
     context['sub.menus']='declare -a submenus=()'
     context['is.sub.menu']='false'
     context['has.sub.menu']='false'
     context['is.ln.break.last']='false'
     context['parent.menu']=''
 
-    MENU._log_info "args: $*"
+    MENU__log_info "args: $*"
 
     [ $# -gt 1 ] && context['name']=$2
     [ $# -gt 2 ] && context['alias']=$3
@@ -169,24 +169,24 @@ MENU.Create() {
     order[${#order[@]}]=$1
     MENUEX['order']=$(declare -p order)
 
-    local default="MENU.SetStyle $1"
+    local default="MENU_SetStyle $1"
     ${default}
 
-    default="MENU.SetStyleEx $1"
+    default="MENU_SetStyleEx $1"
     ${default}
 
     # Create an alias to display the menu
-    if [[ "${context['alias']}" != 'MENU.Null' ]]; then
+    if [[ "${context['alias']}" != 'MENU_Null' ]]; then
         if [ `alias | grep "alias ${context['alias']}=" | wc -l` != 0 ]; then
-            MENU._warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
+            MENU__warning "Alias '${context['alias']}' already exists in the env and will not be reasigned!"
             [ "${MENUEX['build']}" == "Release" ] && return
         fi
         local argc="$1 ${context['name']} ${context['alias']} ${context['callback']}"
-        alias "${context['alias']}"="MENU._show ${argc}"
+        alias "${context['alias']}"="MENU__show ${argc}"
     fi
 }
 
-MENU._colors() {
+MENU__colors() {
     for((i=16; i<256; i++)); do
         printf "\e[38;5;${i}m%03d" $i;
         printf "\e[0m"
@@ -197,7 +197,7 @@ MENU._colors() {
 }
 
 # The MENU class constructor
-MENU._ctor() {
+MENU__ctor() {
     if [[ ! ${MENUEX['styles']} ]]; then
         local -A styles=()
         styles['black']=0
@@ -218,10 +218,10 @@ MENU._ctor() {
         styles['white']=15
 
         # To use some cool custom colors (if your term supports it):
-        # 1. run MENU._colors command in the console to see all the colors available
+        # 1. run MENU__colors command in the console to see all the colors available
         # 2. deside the colors you want to use
         # 3. add them into the styles table w/ some unique names
-        # 4. use MENU.StyleEx function to set the colors for the menu
+        # 4. use MENU_StyleEx function to set the colors for the menu
         styles['custom.background']=17
         styles['custom.foreground']=8
         styles['custom.highlighter']=45
@@ -249,7 +249,7 @@ MENU._ctor() {
 # -----------------------------------------------------------------------------
 # Set the style of the menu (replace the default style);
 #
-# For the list of standard colors, look at MENU._ctor styles[] array; there is
+# For the list of standard colors, look at MENU__ctor styles[] array; there is
 # also an explanation how to create and use custom colors if needed
 #
 # [IN]      handle              - a name/handle of the menu to be used w/ the API
@@ -272,16 +272,16 @@ MENU._ctor() {
 # Remark: 'default' can be passed as any [OPT] argument, which will set the
 #         default value for the corresponding style parameter
 #
-# Remark: to create and use a custom color, look at MENU._ctor styles[] array
+# Remark: to create and use a custom color, look at MENU__ctor styles[] array
 #
 # Example:
 #
-# > MENU.SetStyle menu1 default default default default red '○'
+# > MENU_SetStyle menu1 default default default default red '○'
 #
 # -----------------------------------------------------------------------------
-MENU.SetStyle() {
+MENU_SetStyle() {
     if [[ $# -lt 1 ]]; then
-      MENU._error 'MENU.SetStyle requires more arguments'
+      MENU__error 'MENU_SetStyle requires more arguments'
       return
     fi
 
@@ -328,9 +328,9 @@ MENU.SetStyle() {
 #         default value for the corresponding style parameter
 #
 # -----------------------------------------------------------------------------
-MENU.SetStyleEx() {
+MENU_SetStyleEx() {
     if [[ $# -lt 1 ]]; then
-      MENU._error 'MENU.SetStyle requires more arguments'
+      MENU__error 'MENU_SetStyle requires more arguments'
       return
     fi
 
@@ -362,7 +362,7 @@ MENU.SetStyleEx() {
 }
 
 # -----------------------------------------------------------------------------
-# Add a child menu into the parent menu. Allows to create independently
+# Add a child menu into the parent MENU_ Allows to create independently
 # operating radio buttons in the same menu
 #
 # [IN] parent - name of the main (parent) menu
@@ -373,9 +373,9 @@ MENU.SetStyleEx() {
 # main menu's 'alias'
 #
 # -----------------------------------------------------------------------------
-MENU.AddMenu() {
+MENU_AddMenu() {
     if [[ $# -ne 2 ]]; then
-        MENU._error "MENU.AddMenu requires more arguments"
+        MENU__error "MENU_AddMenu requires more arguments"
         return
     fi
 
@@ -383,13 +383,13 @@ MENU.AddMenu() {
 
     eval "${map["$1"]}"
     if [[ "${context['is.sub.menu']}" == "true" ]]; then
-        MENU._error "Nesting is not supported! 'parent' ['$1'] is a child menu itself."
+        MENU__error "Nesting is not supported! 'parent' ['$1'] is a child menu itself."
         return
     fi
 
     eval "${map["$2"]}"
     if [ ${#context[@]} -eq 0 ]; then
-        MENU._error "No sub menu '$2' has been found!"
+        MENU__error "No sub menu '$2' has been found!"
         return
     fi
 
@@ -398,7 +398,7 @@ MENU.AddMenu() {
 
     # Since menu $2 will be a sub menu it will not have those fields:
     # 'name', name's header and footer, and 'alias'
-    context['name']='MENU.Null'
+    context['name']='MENU_Null'
     context['name.header']=''
     context['name.footer']=''
 
@@ -409,14 +409,14 @@ MENU.AddMenu() {
         fi
     fi
 
-    context['alias']='MENU.Null'
+    context['alias']='MENU_Null'
 
     map[$2]=$(declare -p context)
     MENUEX['map']=$(declare -p map)
 
     eval "${map["$1"]}"
     if [ ${#context[@]} -eq 0 ]; then
-        MENU._error "No main menu '$1' has been found!"
+        MENU__error "No main menu '$1' has been found!"
         return
     fi
 
@@ -437,13 +437,13 @@ MENU.AddMenu() {
 # [IN] $* - the rest of arguments comes from the public .Add function
 #
 # -----------------------------------------------------------------------------
-MENU._add_item() {
+MENU__add_item() {
     if [[ $# -lt 2 ]]; then
-        MENU._error "MENU._add_item requires more arguments"
+        MENU__error "MENU__add_item requires more arguments"
         return
     fi
 
-    MENU._log_info "args: $*"
+    MENU__log_info "args: $*"
 
     eval item_name="$3"
 
@@ -451,8 +451,8 @@ MENU._add_item() {
     item['type']=$1
     item['name']=$item_name
     item['checked']='off' # used for 'check.button' items only
-    item['alias']='MENU.Null'
-    item['callback']='MENU.Null'
+    item['alias']='MENU_Null'
+    item['callback']='MENU_Null'
 
     # Optional arguments
     [ $# -gt 3 ] && item['alias']=$4
@@ -476,14 +476,14 @@ MENU._add_item() {
     [[ "${item['type']}" != 'radio.button' && "${item['type']}" != 'check.button' ]] && return
 
     # Create an alias to call the menu's callback
-    if [[ "${item['alias']}" != 'MENU.Null' ]] && [[ "${item['callback']}" != 'MENU.Null' ]]; then
+    if [[ "${item['alias']}" != 'MENU_Null' ]] && [[ "${item['callback']}" != 'MENU_Null' ]]; then
         if [ `alias | grep "alias ${item['alias']}=" | wc -l` != 0 ]; then
-            MENU._warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
+            MENU__warning "Alias '${item['alias']}' already exists in the env and will not be reasigned!"
             [[ "${MENUEX['build']}" == 'Release' ]] && return
         fi
 
         [[ "${item['type']}" == 'radio.button' ]] && local f2='true' || local f2='false'
-        alias "${item['alias']}"="MENU._select $2 \"${item['name']}\" $f2"
+        alias "${item['alias']}"="MENU__select $2 \"${item['name']}\" $f2"
     fi
 }
 
@@ -511,17 +511,17 @@ MENU._add_item() {
 #
 # Example:
 #
-# > MENU.AddRadioButton MyMenu1 Item1 m1 Menu1Item1_Cb
-# > MENU.AddRadioButton MyMenu1 Item2 m2 Menu1Item2_Cb
+# > MENU_AddRadioButton MyMenu1 Item1 m1 Menu1Item1_Cb
+# > MENU_AddRadioButton MyMenu1 Item2 m2 Menu1Item2_Cb
 #
 # -----------------------------------------------------------------------------
-MENU.AddRadioButton() {
+MENU_AddRadioButton() {
     # A trick to pass an item's name string as a variable to be able
     # to use spaces in the name string, e.g. "Menu Item 1"
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item radio.button $menu_name \"\${item_name}\" $*"
+    local cmd="MENU__add_item radio.button $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -531,11 +531,11 @@ MENU.AddRadioButton() {
 # Remark: look AddRadioButton documentation for the parameters description
 #
 # -----------------------------------------------------------------------------
-MENU.AddCheckButton() {
+MENU_AddCheckButton() {
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item check.button $menu_name \"\${item_name}\" $*"
+    local cmd="MENU__add_item check.button $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -545,8 +545,8 @@ MENU.AddCheckButton() {
 # [IN] handle - a handle to the menu
 #
 # -----------------------------------------------------------------------------
-MENU.AddLnBreak() {
-    local cmd="MENU._add_item ln.break $*"
+MENU_AddLnBreak() {
+    local cmd="MENU__add_item ln.break $*"
     ${cmd}
 }
 
@@ -557,11 +557,11 @@ MENU.AddLnBreak() {
 # [IN] label  - a text (lable) to be added into the menu
 #
 # -----------------------------------------------------------------------------
-MENU.AddLabel() {
+MENU_AddLabel() {
     local menu_name=$1
     local item_name="$2"
     shift 2
-    local cmd="MENU._add_item label $menu_name \"\${item_name}\" $*"
+    local cmd="MENU__add_item label $menu_name \"\${item_name}\" $*"
     ${cmd}
 }
 
@@ -571,8 +571,8 @@ MENU.AddLabel() {
 # [IN] handle - a handle to the menu
 #
 # -----------------------------------------------------------------------------
-MENU.AddDivider() {
-    local cmd="MENU._add_item divider $*"
+MENU_AddDivider() {
+    local cmd="MENU__add_item divider $*"
     ${cmd}
 }
 
@@ -603,19 +603,19 @@ MENU.AddDivider() {
 #       the demo 'Build' menu, shows the 'Build' menu, and calls the 'Release'
 #       radio.button's callbacks:
 #
-# > MENU.Select build_menu Release true false true
+# > MENU_Select build_menu Release true false true
 #
 # -----------------------------------------------------------------------------
-MENU.Select() {
+MENU_Select() {
     if [[ $# -lt 2 ]]; then
-        MENU._error 'MENU.Select requires more arguments'
+        MENU__error 'MENU_Select requires more arguments'
         return
     fi
 
     eval "${MENUEX['map']}"
     eval "${map["$1"]}"
 
-    MENU._log_info "ARGS: $*"
+    MENU__log_info "ARGS: $*"
     [[ $# -gt 2 ]] && local show=$3 || local show='false'
 
     # current_item is used for a child menu trick to call only one callback of
@@ -633,7 +633,7 @@ MENU.Select() {
             [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
             items["$i"]=$(declare -p item)
             context['items']=$(declare -p items)
-            MENU._log_info "CHECK BOX: '$current_item' state='${item['checked']}'"
+            MENU__log_info "CHECK BOX: '$current_item' state='${item['checked']}'"
             check_button_set='true'
             break
         fi
@@ -656,15 +656,15 @@ MENU.Select() {
     [[ $# -gt 6 ]] && flag1=$7
 
     if [ "$show" == 'true' ]; then
-        MENU._log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
-        MENU.Show $1 $flag1 $flag2 $mode
+        MENU__log_info "Show $1 f1=$flag1 f2=$flag2 mode=$mode"
+        MENU_Show $1 $flag1 $flag2 $mode
         current_item=''
     fi
 }
 
 # arguments are comming from the item's alias: $*
-MENU._select() {
-    MENU._log_info "ARGS: $*"
+MENU__select() {
+    MENU__log_info "ARGS: $*"
 
     [[ $# -gt 2 ]] && local f2=$3 || local f2='false'
 
@@ -672,11 +672,11 @@ MENU._select() {
     # to call the main menu's callback
     [[ $# -gt 3 ]] && local f1=$4 || local f1='false'
 
-    MENU.Select $1 "$2"
+    MENU_Select $1 "$2"
 
-    MENU._separator $1
-    MENU.Show $1 $f1 $f2 current
-    MENU._separator $1
+    MENU__separator $1
+    MENU_Show $1 $f1 $f2 current
+    MENU__separator $1
 
     current_item=''
 }
@@ -702,16 +702,16 @@ MENU._select() {
 #       demo 'Build' menu, shows the 'Build' menu, and calls all the 'on'
 #       (checked) check button's callbacks:
 #
-# > MENU.CheckButtonForAll build_menu flip true false false on
+# > MENU_CheckButtonForAll build_menu flip true false false on
 #
 # -----------------------------------------------------------------------------
-MENU.CheckButtonForAll() {
+MENU_CheckButtonForAll() {
     if [ $# -lt 2 ]; then
-        MENU._error "MENU.CheckButtonForAll requires more arguments"
+        MENU__error "MENU_CheckButtonForAll requires more arguments"
         return
     fi
 
-    MENU._log_info "ARGS: $*"
+    MENU__log_info "ARGS: $*"
 
     eval "${MENUEX['map']}"
     eval "${map["$1"]}"
@@ -750,7 +750,7 @@ MENU.CheckButtonForAll() {
     [[ $# -gt 5 ]] && mode=$6 || mode='false'
 
     if [ "$show" == 'true' ]; then
-        MENU.Show $1 $flag1 $flag2 $mode
+        MENU_Show $1 $flag1 $flag2 $mode
     fi
 }
 
@@ -775,16 +775,16 @@ MENU.CheckButtonForAll() {
 # DEMO: For example, the following command simply shows/displays the demo
 #       'PLATFORM' menu w/o calling any callbacks:
 #
-# > MENU.Show pl_menu
+# > MENU_Show pl_menu
 #
 # -----------------------------------------------------------------------------
-MENU.Show() {
+MENU_Show() {
     if [ $# -lt 1 ]; then
-        MENU._error 'MENU.Show requires more arguments'
+        MENU__error 'MENU_Show requires more arguments'
         return
     fi
 
-    MENU._log_info "ARGS: $*"
+    MENU__log_info "ARGS: $*"
 
     eval "${MENUEX['map']}"
     eval "${MENUEX['styles']}"
@@ -792,7 +792,7 @@ MENU.Show() {
 
     if [ "${context['is.sub.menu']}" == 'true' ]; then
         local parent=${context['parent.menu']}
-        MENU._log_warning "'$1' is a sub menu. Show the parent '$parent' menu instead"
+        MENU__log_warning "'$1' is a sub MENU_ Show the parent '$parent' menu instead"
         eval "${map["$parent"]}"
     fi
 
@@ -806,12 +806,12 @@ MENU.Show() {
 
     # Is used to 'space'-pad the menu after line break
     local parent_header_pad=''
-    if [ "${context['name']}" != 'MENU.Null' ]; then
+    if [ "${context['name']}" != 'MENU_Null' ]; then
         local width=${#context['name']}
         ((width += ${#context['name.header']}))
         ((width += ${#context['name.footer']}))
         ((width += 1))
-        parent_header_pad=$(MENU._string_pad '' $width)
+        parent_header_pad=$(MENU__string_pad '' $width)
     fi
 
     eval "${context['sub.menus']}"
@@ -825,27 +825,27 @@ MENU.Show() {
         has_sub_menu='true'
     fi
 
-    local color=$(MENU._color_set ${styles[${context['background.color']}]} ${styles[${context['foreground.color']}]})
+    local color=$(MENU__color_set ${styles[${context['background.color']}]} ${styles[${context['foreground.color']}]})
 
     while true; do
         eval "${context['items']}"
 
-        if [ "${context['name']}" != 'MENU.Null' ]; then
+        if [ "${context['name']}" != 'MENU_Null' ]; then
             printf "$color${context['name.header']}${context['name']/${context['alias']}/${styles['smul']}${context['alias']}${styles['rmul']}}"
             printf "${context['name.footer']} "
         fi
 
         # Store the main menu's callback to be called later
-        if [ "$flag1" == 'true' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+        if [ "$flag1" == 'true' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
             callbacks[$idx]=${context['callback']}
-            [[ "${context['name']}" != 'MENU.Null' ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
+            [[ "${context['name']}" != 'MENU_Null' ]] && arguments[$idx]+="$1 ${context['name']}" || arguments[$idx]="$1"
             ((idx++))
         fi
 
         # The number of spaces needed to cover the radio/check.button symbol for example: [' '] one space
         # if symbol 'x' is 1 char, and 3 spaces ['   '] if button symbol is 'xxx' 3 chars
-        local check_spaces=$(MENU._string_pad '' ${#context['check.button.symbol']})
-        local radio_spaces=$(MENU._string_pad '' ${#context['radio.button.symbol']})
+        local check_spaces=$(MENU__string_pad '' ${#context['check.button.symbol']})
+        local radio_spaces=$(MENU__string_pad '' ${#context['radio.button.symbol']})
 
         if [ "$show_alias" == 'true' ]; then
             printf "\n"
@@ -857,7 +857,7 @@ MENU.Show() {
 
             local name=${item['name']}
             if [ "$show_alias" == 'true' ]; then
-                if [ "${item['alias']}" != 'MENU.Null' ]; then
+                if [ "${item['alias']}" != 'MENU_Null' ]; then
                     name+=" - '${item['alias']}'"
                 fi
                 printf "   > $name\n"
@@ -867,21 +867,21 @@ MENU.Show() {
             if [ "${context['align']}" == 'by.largest.item' ] && [ "${item['type']}" != 'label' ]; then
                 local sz=${context['item.length.max']}
                 ((sz -= ${#name}))
-                local pad=$(MENU._string_pad '' $sz)
+                local pad=$(MENU__string_pad '' $sz)
                 name=${name}$pad
             fi
 
             local type=${item['type']}
             if [ "$type" == 'ln.break' ]; then
                 printf "\n"
-                if [ "${context['name']}" != 'MENU.Null' ] || [ "${context['is.sub.menu']}" == 'true' ]; then
+                if [ "${context['name']}" != 'MENU_Null' ] || [ "${context['is.sub.menu']}" == 'true' ]; then
                     printf "$color$parent_header_pad"
                 fi
                 continue
             fi
 
             local alias=${item['alias']}
-            local highlighter=$(MENU._color_set ${styles[${context['background.color']}]} ${styles[${context['highlighter.color']}]})
+            local highlighter=$(MENU__color_set ${styles[${context['background.color']}]} ${styles[${context['highlighter.color']}]})
             local selected=${context['selected']}
 
             if [ "$type" == 'label' ]; then
@@ -906,11 +906,11 @@ MENU.Show() {
                     printf "\e[0m"
 
                     # Store the radio button item's callback to be called later
-                    MENU._log_ln
-                    MENU._log_warning "current_item: $current_item, mode: $mode, flag2=$flag2"
+                    MENU__log_ln
+                    MENU__log_warning "current_item: $current_item, mode: $mode, flag2=$flag2"
 
                     local add_callback='false'
-                    if [ "${item['callback']}" != 'MENU.Null' ]; then
+                    if [ "${item['callback']}" != 'MENU_Null' ]; then
                         if [ "$mode" == 'current' ]; then
                             [ "$current_item" == "${item['name']}" ] && add_callback='true'
                         else
@@ -941,7 +941,7 @@ MENU.Show() {
                     printf "${context['check.button.bracket.end']} ${name/$alias/$hi} "
                     printf "\e[0m"
 
-                    if [ "$mode" == 'on' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                    if [ "$mode" == 'on' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
@@ -951,19 +951,19 @@ MENU.Show() {
                     printf "${color}${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
                     printf "${name/$alias/${styles['smul']}$alias${styles['rmul']}} "
 
-                    if [ "$mode" == 'off' ] && [ "${context['callback']}" != 'MENU.Null' ]; then
+                    if [ "$mode" == 'off' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
                     fi
                 fi
 
-                MENU._log_ln
-                MENU._log_warning "mode: $mode current_item: $current_item"
-                MENU._log_info "${item['callback']} ${item['name']} ${item['checked']}"
+                MENU__log_ln
+                MENU__log_warning "mode: $mode current_item: $current_item"
+                MENU__log_info "${item['callback']} ${item['name']} ${item['checked']}"
 
                 local add_callback='false'
-                if [ "${item['callback']}" != 'MENU.Null' ]; then
+                if [ "${item['callback']}" != 'MENU_Null' ]; then
                     if [ "$mode" == 'current' ]; then
                         [ "$current_item" == "${item['name']}" ] && add_callback='true'
                     else
@@ -1025,7 +1025,7 @@ MENU.Show() {
 #         order of how the keys of the bash's assosiative array are sorted
 #
 # -----------------------------------------------------------------------------
-MENU.ShowAll() {
+MENU_ShowAll() {
     [[ $# -gt 0 ]] && order=$1 || order='false'
     [[ $# -gt 1 ]] && f1=$2 || f1='false'
     [[ $# -gt 2 ]] && f2=$3 || f2='false'
@@ -1041,8 +1041,8 @@ MENU.ShowAll() {
             eval "${map["$last_menu"]}"
             [ "${context['is.sub.menu']}" == 'true' ] && continue
 
-            MENU._separator $last_menu true
-            MENU.Show $last_menu $f1 $f2 $mode
+            MENU__separator $last_menu true
+            MENU_Show $last_menu $f1 $f2 $mode
         done
     else
         eval "${MENUEX['map']}"
@@ -1052,12 +1052,12 @@ MENU.ShowAll() {
             [ "${context['is.sub.menu']}" == 'true' ] && continue
 
             last_menu=$menu
-            MENU._separator $menu true
-            MENU.Show $menu $f1 $f2 $mode
+            MENU__separator $menu true
+            MENU_Show $menu $f1 $f2 $mode
         done
     fi
 
-    MENU._separator $last_menu true
+    MENU__separator $last_menu true
 }
 
 # -----------------------------------------------------------------------------
@@ -1069,9 +1069,9 @@ MENU.ShowAll() {
 # [OUT] length - the length of the menu
 #
 # -----------------------------------------------------------------------------
-MENU._calculate_menu_width() {
+MENU__calculate_menu_width() {
     if [ $# -lt 1 ]; then
-        MENU._error 'MENU._calculate_menu_width requires more arguments'
+        MENU__error 'MENU__calculate_menu_width requires more arguments'
         return
     fi
 
@@ -1133,7 +1133,7 @@ MENU._calculate_menu_width() {
     fi
 
     # When we get here the context is either the menu or the parent menu
-    if [[ "${context['name']}" != 'MENU.Null' ]]; then
+    if [[ "${context['name']}" != 'MENU_Null' ]]; then
         ((width += ${#context['name']}))
         ((width += ${#context['name.header']}))
         ((width += ${#context['name.footer']}))
@@ -1143,7 +1143,7 @@ MENU._calculate_menu_width() {
     echo $width
 }
 
-MENU._color_set() {
+MENU__color_set() {
     echo "\e[48;5;$1m\e[38;5;$2m"
 }
 
@@ -1155,9 +1155,9 @@ MENU._color_set() {
 #                     of all the menus
 #
 # -----------------------------------------------------------------------------
-MENU._separator() {
+MENU__separator() {
     if [ $# -lt 1 ]; then
-        MENU._error 'MENU._separator requires more arguments'
+        MENU__error 'MENU__separator requires more arguments'
         return
     fi
 
@@ -1168,14 +1168,14 @@ MENU._separator() {
     if [ ${MENUEX['width.max']} -lt 1 ]; then
         eval "${MENUEX['map']}"
         for menu in "${!map[@]}"; do
-            width=$(MENU._calculate_menu_width $menu)
+            width=$(MENU__calculate_menu_width $menu)
             [[ $width -gt ${MENUEX['width.max']} ]] && MENUEX['width.max']=$width
 
-            MENU._log_warning "Re-calc: $menu[menu.width]: $width"
+            MENU__log_warning "Re-calc: $menu[MENU_width]: $width"
 
             eval "${map["$menu"]}"
 
-            context['menu.width']=$width
+            context['MENU_width']=$width
             map[$menu]=$(declare -p context)
             MENUEX['map']=$(declare -p map)
         done
@@ -1190,25 +1190,25 @@ MENU._separator() {
             [ ${#submenus[@]} -eq 0 ] && continue
 
             local parent_ln_break=${context['is.ln.break.last']}
-            width=${context['menu.width']}
+            width=${context['MENU_width']}
             for i in ${!submenus[@]}; do
                 local subname=${submenus["$i"]}
                 eval "${map[$subname]}"
-                MENU._log_warning "submenus[$i]: $subname['menu.width']: ${context['menu.width']}"
+                MENU__log_warning "submenus[$i]: $subname['MENU_width']: ${context['MENU_width']}"
                 if [ "$parent_ln_break" == 'true' ]; then
-                    [ ${context['menu.width']} -gt $width ] && width=${context['menu.width']}
+                    [ ${context['MENU_width']} -gt $width ] && width=${context['MENU_width']}
                 else
-                    ((width += ${context['menu.width']}))
+                    ((width += ${context['MENU_width']}))
                 fi
             done
 
-            MENU._log_warning "Re-calc w/ subs: $menu[menu.width]: $width"
+            MENU__log_warning "Re-calc w/ subs: $menu[MENU_width]: $width"
             [[ $width -gt ${MENUEX['width.max']} ]] && MENUEX['width.max']=$width
 
             # Update the new width w/ all the subs combined
             eval "${map["$menu"]}"
 
-            context['menu.width']=$width
+            context['MENU_width']=$width
             map[$menu]=$(declare -p context)
             MENUEX['map']=$(declare -p map)
         done
@@ -1224,14 +1224,14 @@ MENU._separator() {
         eval "${map["$menu"]}"
     fi
 
-    width=${context['menu.width']}
+    width=${context['MENU_width']}
 
     [[ $# -gt 1 && "$2" == 'true' ]] && width=${MENUEX['width.max']}
 
     if [ "${context['separator.show']}" == 'true' ]; then
         ((width--)) # compensation for the way printf works
         cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
-        printf $(MENU._color_set ${styles[${context['background.color']}]} ${styles[${context['foreground.color']}]})
+        printf $(MENU__color_set ${styles[${context['background.color']}]} ${styles[${context['foreground.color']}]})
         eval $cmd
         printf "\e[0m"
         printf "\n"
@@ -1239,7 +1239,7 @@ MENU._separator() {
 }
 
 # arguments are comming from the main menu's alias: $* f1 f2 mode
-MENU._show() {
+MENU__show() {
     [[ $# -gt 4 ]] && f1=$5 || f1='false'
     [[ $# -gt 5 ]] && f2=$6 || f2='false'
     [[ $# -gt 6 ]] && mode=$7 || mode='false'
@@ -1248,14 +1248,14 @@ MENU._show() {
         show_alias='true'
     fi
 
-    MENU._separator $1
-    MENU.Show $1 $f1 $f2 $mode
-    MENU._separator $1
+    MENU__separator $1
+    MENU_Show $1 $f1 $f2 $mode
+    MENU__separator $1
 
     unset show_alias
 }
 
-MENU._debug_print() {
+MENU__debug_print() {
     eval "${map["$1"]}"
     eval "${MENUEX['styles']}"
 
@@ -1277,12 +1277,12 @@ MENU._debug_print() {
     done
 }
 
-MENU._debug_print_all() {
+MENU__debug_print_all() {
     [[ "${MENUEX['build']}" == 'Release' ]] && return
 
     eval "${MENUEX['map']}"
     for key in "${!map[@]}"; do
-        MENU._debug_print $key
+        MENU__debug_print $key
     done
 }
 
