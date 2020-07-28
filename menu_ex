@@ -54,6 +54,10 @@ MENU_string_pad() {
     echo "$1$pad"
 }
 
+MENU_string_EX_pad() {
+    str=${ printf '%*s' "$len"; }
+}
+
 # -----------------------------------------------------------------------------
 # Converts a string to an upper case string
 #
@@ -77,13 +81,13 @@ MENU_log() {
     local marker
     case $1 in
         INFO)
-            marker=$(MENU_color_set ${styles['black']} ${styles['light.green']})
+            marker="\e[48;5;${styles['black']}m\e[38;5;${styles['light.green']}m"
             ;;
         WARNING)
-            marker=$(MENU_color_set ${styles['black']} ${styles['light.yellow']})
+            marker="\e[48;5;${styles['black']}m\e[38;5;${styles['light.yellow']}m"
             ;;
         SEVERE)
-            marker=$(MENU_color_set ${styles['black']} ${styles['light.red']})
+            marker="\e[48;5;${styles['black']}m\e[38;5;${styles['light.red']}m"
             ;;
     esac
 
@@ -442,7 +446,7 @@ MENU_add_item() {
     local -A item=()
     item['type']=$1
     item['name']=$item_name
-    item['checked']='off' # used for 'check.button' items only
+    item['checked']='false' # used for 'check.button' items only
     item['alias']='MENU_Null'
     item['callback']='MENU_Null'
 
@@ -622,7 +626,7 @@ MENU_Select() {
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
         if [[ "${item['name']}" == $2 ]] && [[ "${item['type']}" == 'check.button' ]]; then
-            [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
+            [[ "${item['checked']}" == 'true' ]] && item['checked']='false' || item['checked']='true'
             items["$i"]=$(declare -p item)
             context['items']=$(declare -p items)
             MENU_log_info "CHECK BOX: '$current_item' state='${item['checked']}'"
@@ -718,13 +722,13 @@ MENU_CheckButtonForAll() {
         local updated='false'
         case $2 in
             check)
-                [ "${item["checked"]}" == 'off' ] && item['checked']='on'; updated='true'
+                [ "${item["checked"]}" == 'false' ] && item['checked']='true'; updated='true'
                 ;;
             uncheck)
-                [ "${item["checked"]}" == 'on' ] && item['checked']='off'; updated='true'
+                [ "${item["checked"]}" == 'true' ] && item['checked']='false'; updated='true'
                 ;;
             flip)
-                [ "${item["checked"]}" == 'on' ] && item['checked']='off' || item['checked']='on'
+                [ "${item["checked"]}" == 'true' ] && item['checked']='false' || item['checked']='true'
                 updated='true'
                 ;;
         esac
@@ -797,13 +801,10 @@ MENU_Show() {
     [[ $# -gt 3 ]] && local mode=$4 || local mode='false'
 
     # Is used to 'space'-pad the menu after line break
-    local parent_header_pad=''
+    local pheader_pad_sz=0
     if [ "${context['name']}" != 'MENU_Null' ]; then
-        local width=${#context['name']}
-        ((width += ${#context['name.header']}))
-        ((width += ${#context['name.footer']}))
-        ((width += 1))
-        parent_header_pad=$(MENU_string_pad '' $width)
+        pheader_pad_sz=${#context['name']}
+        ((pheader_pad_sz += ${#context['name.header']} + ${#context['name.footer']} + 1))
     fi
 
     eval "${context['sub.menus']}"
@@ -817,7 +818,7 @@ MENU_Show() {
         has_sub_menu='true'
     fi
 
-    local color=$(MENU_color_set ${styles[${context['background.color']}]} ${styles[${context['foreground.color']}]})
+    local color="\e[48;5;${styles[${context['background.color']}]}m\e[38;5;${styles[${context['foreground.color']}]}m"
     local smul="\e[4m"
     local rmul="\e[24m"
 
@@ -858,28 +859,27 @@ MENU_Show() {
                 continue
             fi
 
+            local name_pad_sz=1
             if [ "${context['align']}" == 'by.largest.item' ] && [ "${item['type']}" != 'label' ]; then
-                local sz=${context['item.length.max']}
-                ((sz -= ${#name}))
-                local pad=$(MENU_string_pad '' $sz)
-                name=${name}$pad
+                name_pad_sz=${context['item.length.max']}
+                ((name_pad_sz = name_pad_sz - ${#name} + 1))
             fi
 
             local type=${item['type']}
             if [ "$type" == 'ln.break' ]; then
                 printf "\n"
                 if [ "${context['name']}" != 'MENU_Null' ] || [ "${context['is.sub.menu']}" == 'true' ]; then
-                    printf "$color$parent_header_pad"
+                    printf $color"%*s" $pheader_pad_sz
                 fi
                 continue
             fi
 
             local alias=${item['alias']}
-            local highlighter=$(MENU_color_set ${styles[${context['background.color']}]} ${styles[${context['highlighter.color']}]})
+            local highlighter="\e[48;5;${styles[${context['background.color']}]}m\e[38;5;${styles[${context['highlighter.color']}]}m"
             local selected=${context['selected']}
 
             if [ "$type" == 'label' ]; then
-                printf ${color}"$name "
+                printf ${color}"${name}%*s" $name_pad_sz
                 continue;
             fi
 
@@ -896,7 +896,7 @@ MENU_Show() {
                     # '(*) Name '
                     printf "${highlighter}${context['radio.button.bracket.start']}"
                     printf "${context['radio.button.symbol']}${context['radio.button.bracket.end']} "
-                    printf "${name/$alias/$hi} "
+                    printf "${name/$alias/$hi}%*s" $name_pad_sz
                     printf "\e[0m"
 
                     # Store the radio button item's callback to be called later
@@ -920,22 +920,23 @@ MENU_Show() {
                 else
                     # '( ) Name '
                     printf "${color}${context['radio.button.bracket.start']}$radio_spaces${context['radio.button.bracket.end']} "
-                    printf "${name/$alias/$smul$alias$rmul} "
+                    printf "${name/$alias/$smul$alias$rmul}%*s" $name_pad_sz
                 fi
 
                 continue;
             fi
 
             if [ "$type" == 'check.button' ]; then
-                if [ "${item['checked']}" == 'on' ]; then
+                if [ "${item['checked']}" == 'true' ]; then
                     local hi=${highlighter}$smul${item['alias']}$rmul
 
                     # '[x] Name '
                     printf "${highlighter}${context['check.button.bracket.start']}${context['check.button.symbol']}"
-                    printf "${context['check.button.bracket.end']} ${name/$alias/$hi} "
+                    printf "${context['check.button.bracket.end']} "
+                    printf "${name/$alias/$hi}%*s" $name_pad_sz
                     printf "\e[0m"
 
-                    if [ "$mode" == 'on' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
+                    if [ "$mode" == 'true' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
@@ -943,9 +944,9 @@ MENU_Show() {
                 else
                     # '[ ] Name '
                     printf "${color}${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
-                    printf "${name/$alias/$smul$alias$rmul} "
+                    printf "${name/$alias/$smul$alias$rmul}%*s" $name_pad_sz
 
-                    if [ "$mode" == 'off' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
+                    if [ "$mode" == 'false' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
@@ -981,7 +982,7 @@ MENU_Show() {
         if [ "$has_sub_menu" == 'true' ]; then
             if [[ $sub_menu_count -gt $sub_menu_index ]]; then
                 if [ "$is_parent_ln_break" == 'true' ] && [ $sub_menu_index -gt 0 ]; then
-                    printf "\n$parent_header_pad"
+                    printf "\n%*s" $pheader_pad_sz
                 fi
                 local subname=${parent_sub_menus["$sub_menu_index"]}
                 eval "${map["$subname"]}"
@@ -1137,10 +1138,6 @@ MENU_calculate_menu_width() {
     echo $width
 }
 
-MENU_color_set() {
-    echo "\e[48;5;$1m\e[38;5;$2m"
-}
-
 # -----------------------------------------------------------------------------
 # Prints out the menus' separator
 #
@@ -1225,7 +1222,7 @@ MENU_separator() {
     if [ "${context['separator.show']}" == 'true' ]; then
         ((width--)) # compensation for the way printf works
         cmd="printf -- '${context['separator.symbol']}%.0s' {1..$width}"
-        printf $(MENU_color_set ${styles[${context['background.color']}]} ${styles[${context['foreground.color']}]})
+        printf "\e[48;5;${styles[${context['background.color']}]}m\e[38;5;${styles[${context['foreground.color']}]}m"
         eval $cmd
         printf "\e[0m"
         printf "\n"
