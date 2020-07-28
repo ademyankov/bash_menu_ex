@@ -3,12 +3,11 @@
 # -----------------------------------------------------------------------------
 # Customizable console menu to organize different environment settings
 #
-# Alex Demyankov
-# alex.demyankov@gmail.com
-# https://www.linkedin.com/in/ademyankov/
+# Copyright(c) 2020 Alex Demyankov <alex.demyankov@gmail.com>
+# All rights reserved.
 #
-# March, 2020
-#
+# Licensed under the MIT license; A copy of the license that can be
+# found in the LICENSE file.
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -39,35 +38,6 @@ MENUEX['build']='Release'
 #                    supposed to be called directly, but nothing prevents it
 #
 # -----------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------------
-# Pads a string with 'space' chars to the length specified
-#
-# [IN] string - a string to pad
-# [IN] length - the length the output string should be
-# [OUT] returns the padded string
-#
-# -----------------------------------------------------------------------------
-MENU_string_pad() {
-    local len=$(($2 - ${#1}))
-    pad=`printf '%*s' "$len" | tr ' ' " "`
-    echo "$1$pad"
-}
-
-MENU_string_EX_pad() {
-    str=${ printf '%*s' "$len"; }
-}
-
-# -----------------------------------------------------------------------------
-# Converts a string to an upper case string
-#
-# [IN] string - a string to convert
-# [OUT] returns the converted string
-#
-# -----------------------------------------------------------------------------
-MENU_to_upper() {
-    echo "$(echo ${1} | awk '{print toupper($0)}')"
-}
 
 # -----------------------------------------------------------------------------
 # Helper functions to display log/trace
@@ -837,10 +807,10 @@ MENU_Show() {
             ((idx++))
         fi
 
-        # The number of spaces needed to cover the radio/check.button symbol for example: [' '] one space
+        # The number of spaces needed to cover the empty radio/check.button box; for example: [' '] one space
         # if symbol 'x' is 1 char, and 3 spaces ['   '] if button symbol is 'xxx' 3 chars
-        local check_spaces=$(MENU_string_pad '' ${#context['check.button.symbol']})
-        local radio_spaces=$(MENU_string_pad '' ${#context['radio.button.symbol']})
+        local check_pad_sz=${#context['check.button.symbol']}
+        local radio_pad_sz=${#context['radio.button.symbol']}
 
         if [ "$show_alias" == 'true' ]; then
             printf "\n"
@@ -859,10 +829,11 @@ MENU_Show() {
                 continue
             fi
 
+            # Calculate how many spaces we have to add after the menu's item name
+            # in order to have all items to be aligned by the longest one
             local name_pad_sz=1
             if [ "${context['align']}" == 'by.largest.item' ] && [ "${item['type']}" != 'label' ]; then
-                name_pad_sz=${context['item.length.max']}
-                ((name_pad_sz = name_pad_sz - ${#name} + 1))
+                ((name_pad_sz += ${context['item.length.max']} - ${#name}))
             fi
 
             local type=${item['type']}
@@ -919,7 +890,9 @@ MENU_Show() {
                     fi
                 else
                     # '( ) Name '
-                    printf "${color}${context['radio.button.bracket.start']}$radio_spaces${context['radio.button.bracket.end']} "
+                    printf "${color}${context['radio.button.bracket.start']}"
+                    printf "%*s" $radio_pad_sz
+                    printf "${context['radio.button.bracket.end']} "
                     printf "${name/$alias/$smul$alias$rmul}%*s" $name_pad_sz
                 fi
 
@@ -943,7 +916,9 @@ MENU_Show() {
                     fi
                 else
                     # '[ ] Name '
-                    printf "${color}${context['check.button.bracket.start']}$check_spaces${context['check.button.bracket.end']} "
+                    printf "${color}${context['check.button.bracket.start']}"
+                    printf "%*s" $check_pad_sz
+                    printf "${context['check.button.bracket.end']} "
                     printf "${name/$alias/$smul$alias$rmul}%*s" $name_pad_sz
 
                     if [ "$mode" == 'false' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
