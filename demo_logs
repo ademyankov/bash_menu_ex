@@ -9,6 +9,10 @@
 # Might be helpfull since aliases for LOGS menu will not be underlined
 # because the lower/upper case does not technically match
 #
+# Aliases:
+#
+#   'dev'  - to display all the demo menus
+#
 # -----------------------------------------------------------------------------
 
 MENU_LogsCallback() {
@@ -70,3 +74,7 @@ DEMO_CreateLogsMenu() {
 
 DEMO_CreateLogsMenu
 alias dev='MENU_ShowAll true'
+
+# Display all the menus and calls all the item's callbacks, which sets the environment,
+# controlled by the menus. It's like setting everything up into a default state
+#MENU_ShowAll true true true all

@@ -4,6 +4,13 @@
 #
 # Demo menu 'Build'
 #
+# Aliases:
+#
+#   'dev'   - to display all the demo menus
+#   'Build' - shows Build menu
+#   'flip'  - flips all the check boxes in the menu
+#             (shows how .CheckButtonForAll function can be used)
+#
 # -----------------------------------------------------------------------------
 
 MENU_BuildCallback() {
@@ -75,3 +82,10 @@ DEMO_CreateBuildMenu() {
 
 DEMO_CreateBuildMenu
 alias dev='MENU_ShowAll true'
+
+# Display all the menus and calls all the item's callbacks, which sets the environment,
+# controlled by the menus. It's like setting everything up into a default state
+#MENU_ShowAll true true true all
+
+# Some cool stuff that you can do with the MENU class
+alias flip='MENU_separator build_menu; MENU_CheckButtonForAll build_menu flip true false false all; MENU_separator build_menu'
