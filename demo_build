@@ -9,15 +9,18 @@
 MENU_BuildCallback() {
     echo " $1.$2..."
     echo ' ...'
+    # do something
 }
 
 MENU_BuildModeCallback() {
     echo " $1.$2..."
     case $2 in
         Debug)
+            # do something
             echo ' ...'
             ;;
         Release)
+            # do something
             echo ' ...'
             ;;
     esac
@@ -27,18 +30,23 @@ MENU_BuildGccFlagsCallback() {
     echo " $1.$2.state.[$3]..."
     case $2 in
         Pedantic)
+            # do something
             echo ' ...'
             ;;
         Wall)
+            # do something
             echo ' ...'
             ;;
         Werror)
+            # do something
             echo ' ...'
             ;;
         fPIC)
+            # do something
             echo ' ...'
             ;;
         isoC99)
+            # do something
             echo ' ...'
             ;;
     esac
@@ -57,6 +65,7 @@ DEMO_CreateBuildMenu() {
     MENU_AddCheckButton build_menu Werror err MENU_BuildGccFlagsCallback
     MENU_AddCheckButton build_menu fPIC PIC MENU_BuildGccFlagsCallback
     MENU_AddCheckButton build_menu isoC99 iso MENU_BuildGccFlagsCallback
+
     MENU_Select build_menu Debug false
     MENU_Select build_menu Wall false
     MENU_Select build_menu Werror false

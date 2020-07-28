@@ -1,2 +1,6 @@
 # bash_menu_ex
-Bash menu
+
+Bash console menu helps to manage different environment settings.
+
+## Demo
+

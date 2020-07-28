@@ -58,9 +58,9 @@ DEMO_CreateLogsMenu() {
     MENU_AddRadioButton logs_menu WARNING warning MENU_LogsCallback
     MENU_AddRadioButton logs_menu INFO info MENU_LogsCallback
     MENU_AddLnBreak logs_menu
-    MENU_AddRadioButton logs_menu FINE '' MENU_LogsCallback
-    MENU_AddRadioButton logs_menu FINER '' MENU_LogsCallback
-    MENU_AddRadioButton logs_menu FINEST '' MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINE MENU_Null MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINER MENU_Null MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINEST MENU_Null MENU_LogsCallback
     MENU_AddRadioButton logs_menu OFF off MENU_LogsCallback
 
     MENU_Select logs_menu INFO false
