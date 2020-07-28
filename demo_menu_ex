@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# include MENU extension class
-source ./menu_ex
-
 # ---------------------------------------------------------------------------------------------------------------------
 #
 # Demo Example:
@@ -22,93 +19,93 @@ source ./menu_ex
 
 # [IN] handle - the menu's name/handle
 # [IN] name   - the menu's name (if specified)
-MENU_PlCallback() {
-    echo " PL.$2..."
-    echo ' ...'
-}
-
-# [IN] handle - the menu's name/handle
-# [IN] name   - the item's selected
-MENU_PlLinuxCallback() {
-    if [ "$2" != 'Linux' ]; then
-        MENU__error "Wrong callback!"
-        return
-    fi
-    echo " PL.Linux.Callback..."
-    echo ' ...'
-}
-
-MENU_PlQemuCallback() {
-    echo " PL.$2..."
-    echo ' ...'
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-MENU_PlChild1Callback() {
-    echo " PL.It..."
-    echo ' ...'
-}
-
-MENU_PlChild1RadioCallback() {
-    echo " PL.SubMENU_$2..."
-    echo ' ...'
-}
-
-# [IN]      handle - the menu's name/handle
-# [IN]      name   - the name of the selected item
-# [IN][OPT] state  - {on, off} item's state (check.button type only)
-MENU_PlChild1CheckCallback() {
-    echo " PL.SubMENU_$2.[$3]..."
-    echo ' ...'
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-MENU_PlChild2RadioCallback() {
-    echo " PL.Extra.$2..."
-    echo ' ...'
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-MENU_BuildCallback() {
-    echo " Build.$2..."
-    echo ' ...'
-}
-
-MENU_BuildModeCallback() {
-    echo " Build.$2..."
-    case $2 in
-        Debug)
-            echo ' ...'
-            ;;
-        Release)
-            echo ' ...'
-            ;;
-    esac
-}
-
-MENU_BuildGccFlagsCallback() {
-    echo " PL.$2.state.[$3]..."
-    case $2 in
-        Pedantic)
-            echo ' ...'
-            ;;
-        Wall)
-            echo ' ...'
-            ;;
-        Werror)
-            echo ' ...'
-            ;;
-        fPIC)
-            echo ' ...'
-            ;;
-        isoC99)
-            echo ' ...'
-            ;;
-    esac
-}
+#MENU_PlCallback() {
+#    echo " PL.$2..."
+#    echo ' ...'
+#}
+#
+## [IN] handle - the menu's name/handle
+## [IN] name   - the item's selected
+#MENU_PlLinuxCallback() {
+#    if [ "$2" != 'Linux' ]; then
+#        MENU__error "Wrong callback!"
+#        return
+#    fi
+#    echo " PL.Linux.Callback..."
+#    echo ' ...'
+#}
+#
+#MENU_PlQemuCallback() {
+#    echo " PL.$2..."
+#    echo ' ...'
+#}
+#
+## ---------------------------------------------------------------------------------------------------------------------
+#
+#MENU_PlChild1Callback() {
+#    echo " PL.It..."
+#    echo ' ...'
+#}
+#
+#MENU_PlChild1RadioCallback() {
+#    echo " PL.SubMENU_$2..."
+#    echo ' ...'
+#}
+#
+## [IN]      handle - the menu's name/handle
+## [IN]      name   - the name of the selected item
+## [IN][OPT] state  - {on, off} item's state (check.button type only)
+#MENU_PlChild1CheckCallback() {
+#    echo " PL.SubMENU_$2.[$3]..."
+#    echo ' ...'
+#}
+#
+## ---------------------------------------------------------------------------------------------------------------------
+#
+#MENU_PlChild2RadioCallback() {
+#    echo " PL.Extra.$2..."
+#    echo ' ...'
+#}
+#
+## ---------------------------------------------------------------------------------------------------------------------
+#
+#MENU_BuildCallback() {
+#    echo " Build.$2..."
+#    echo ' ...'
+#}
+#
+#MENU_BuildModeCallback() {
+#    echo " Build.$2..."
+#    case $2 in
+#        Debug)
+#            echo ' ...'
+#            ;;
+#        Release)
+#            echo ' ...'
+#            ;;
+#    esac
+#}
+#
+#MENU_BuildGccFlagsCallback() {
+#    echo " PL.$2.state.[$3]..."
+#    case $2 in
+#        Pedantic)
+#            echo ' ...'
+#            ;;
+#        Wall)
+#            echo ' ...'
+#            ;;
+#        Werror)
+#            echo ' ...'
+#            ;;
+#        fPIC)
+#            echo ' ...'
+#            ;;
+#        isoC99)
+#            echo ' ...'
+#            ;;
+#    esac
+#}
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -161,185 +158,185 @@ MENU_Create() {
     # 2 [OPT]       |     name               - a displayed name of the menu
     # 3 [OPT]       |      |    alias        - an alias to be created that displays the menu
     # 4 [OPT]       |      |     |  callback - a function to be called when the menu is displayed
-    MENU_Create pl_menu PLATFORM PL MENU_PlCallback
-    #MENU_Create pl_menu $null PL MENU_DemoMainMenu
-    #MENU_Create pl_menu $null $null MENU_DemoMainMenu
-    #MENU_Create pl_menu
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Under the hood 'PL' is just an alias for: 'MENU_Show pl_menu'
-    #
-    # 1 [OPT]  flag1           - whether to call the main menu's callback
-    # 2 [OPT]   |    flag2     - whether to call the selected radio button item's callback
-    # 3 [OPT]   |     |   mode - call-mode of all the check button item's callbacks, for modes see documentation for .Show
-    # > PL    false false all
-    #
-    # Alias 'PL' usage examples:
-    #
-    # > PL                 - displays the menu
-    # > PL true            - displays the menu + calls the menu's callback
-    # > PL false true      - displays the menu + calls the selected radio button item's callback
-    # > PL true true       - displays the menu + calls both the selected item and the main menu's callbacks
-    # > PL false false all - displays the menu + calls all the radio button item's callbacks
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Set the menu's style (replace the default style)
-    #
-    # 1           handle                                                  - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]       |    divider                                          - devider to be used w/ .AddDivider ('|' by default)
-    # 3 [OPT]       |      |     alignment                                - alignent of the items (none by default)
-    # 4 [OPT]       |      |        |  background.color                   - the background color (black by default)
-    # 5 [OPT]       |      |        |    |     foreground.color           - the regular text color (white by default)
-    # 6 [OPT]       |      |        |    |       |  highlighter.color     - the hightlighted items color (green by default)
-    # 7 [OPT]       |      |        |    |       |    | radio.symbol      - the select symbol for the radio button when selected
-    # 8 [OPT]       |      |        |    |       |    |   |  check.symbol - the check symbol for the check button when checked
-    #MENU_SetStyle pl_menu default none default cyan red '○' default
-    #MENU_SetStyle pl_menu default by.largest.item
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Set the extra style of the menu (replace the default style)
-    # 1            handle                                                  - a name/handle of the menu to be used w/ the API
-    # 2 [OPT]         |     separator.show                                 - {true/false} whether to print the menu's separator (true by default)
-    # 3 [OPT]         |       |  separator.symbol                          - separator symbol ('-' by default)
-    # 4 [OPT]         |       |    |  name.header                          - menu's name header (' * ' by default)
-    # 5 [OPT]         |       |    |    |  name.footer                     - menu's name footer (':' by default)
-    # 6 [OPT]         |       |    |    |    | symbol.radio.start          - radio.button opening symbol ('(' by default)
-    # 7 [OPT]         |       |    |    |    |   | symbol.radio.end        - radio.button closing symbol (')' by default)
-    # 8 [OPT]         |       |    |    |    |   |   | symbol.chk.start    - check.button opening symbol ('[' by default)
-    # 9 [OPT]         |       |    |    |    |   |   |   |  symbol.chk.end - check.button closing symbol (']' by default)
-    #MENU_SetStyleEx pl_menu true '-' " * " ":" '(' ')' '[' ']'
-    #
-    # For example:
-    #
-    #MENU_SetStyleEx pl_menu true '=' " + '" "':" '[[' ']]' '((' '))'
-    #MENU_SetStyle pl_menu default by.largest.item cyan 'xx' '***'
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Add a radio.button item into the menu
-    #
-    # 1               handle                    - a name/handle of the menu to be used w/ the API
-    # 2                 |    name               - an item's name to be added into the menu
-    # 3 [OPT]           |     |    alias        - an alias to be created that triggers the item's callback
-    # 4 [OPT]           |     |     |  callback - a function to be called when an item is selected
-    MENU_AddRadioButton pl_menu Linux nux MENU_PlLinuxCallback
-    #MENU_AddRadioButton pl_menu Linux $null MENU_DemoPlLinuxCb
-    #MENU_AddRadioButton pl_menu Linux
-    #
-    # In the invocation example #2, there is no alias for item 'Linux', so the only way to call it is by using
-    # the .Select command, like so: MENU_Select pl_menu Linux true false true
-    # Please, look into .Select command demo to understand all the flags
-    #
-    # -----------------------------------------------------------------------------------------------------------------
-    # Under the hood 'nux' is just an alias for: 'MENU_Select pl_menu Linux true false true'
-    #
-    # Alias 'nux' can take additional optional arguments:
-    #
-    # 1 [OPT]  flag1     - {true, false} whether to call the main menu's callback
-    # 2 [OPT]   |   mode - call-mode of the check button callbacks {no(false), all(true), on, off}
-    # > nux    true no
-    #
-    # Alias 'nux' usage examples:
-    #
-    # > nux          - selects 'Linux' item, displays the 'PLATFORM' menu and triggers the 'Linux' item's callback
-    # > nux true     - all the above + triggers the 'PLATFORM' menu's callback
-    # > nux true all - all the above + triggers all the check button item's callbacks
-    # -----------------------------------------------------------------------------------------------------------------
-
-    MENU_AddDivider pl_menu
-    MENU_AddLabel pl_menu QEMU:
-    MENU_AddRadioButton pl_menu v8 v8 MENU_PlQemuCallback
-    MENU_AddRadioButton pl_menu arm32 arm MENU_PlQemuCallback
-    #MENU_AddRadioButton pl_menu "Name w/ space" ace MENU_DemoPlQemuCb
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Select an item of the menu
-    #
-    # 1         handle                           - a name/handle of the menu to be used w/ the API
-    # 2           |    name                      - a name of an item to be set as 'selected' in the menu
-    # 3 [OPT]     |     |   show                 - whether to show the menu after the item has been selected/checked
-    # 4 [OPT]     |     |    |    flag1          - whether to call the main menu's callback
-    # 5 [OPT]     |     |    |     |   flag2     - whether to call the selected radio button item's callback
-    # 6 [OPT]     |     |    |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
-    MENU_Select pl_menu v8 false false true no
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Create two child menus and add them into the main (parent) PLATFORM menu
-    # -----------------------------------------------------------------------------------------------------------------
-    MENU_Create pl_child_menu1 $null $null MENU_PlChild1Callback
-    #MENU_SetStyle pl_child_menu1 default none default custom1 custom2
-
-    #MENU_AddLabel pl_child_menu1 It:
-    MENU_AddRadioButton pl_child_menu1 Item1 m1 MENU_PlChild1RadioCallback
-    MENU_AddRadioButton pl_child_menu1 Item2 m2 MENU_PlChild1RadioCallback
-    MENU_AddRadioButton pl_child_menu1 Item3 m3 MENU_PlChild1RadioCallback
-    # -----------------------------------------------------------------------------------------------------------------
-    MENU_AddDivider pl_child_menu1
-    #MENU_AddLabel pl_child_menu1 Mode:
-    MENU_AddCheckButton pl_child_menu1 Ps1 s1 MENU_PlChild1CheckCallback
-    MENU_AddCheckButton pl_child_menu1 Nx Nx MENU_PlChild1CheckCallback
-    MENU_Select pl_child_menu1 Item2 false
-    MENU_Select pl_child_menu1 Ps1 false
-    # -----------------------------------------------------------------------------------------------------------------
-    MENU_Create pl_child_menu2
-    #MENU_SetStyle pl_child_menu2 default none default custom1 custom2
-
-    MENU_AddDivider pl_child_menu2
-    #MENU_AddLabel pl_child_menu2 Extra:
-    MENU_AddRadioButton pl_child_menu2 Sub1 b1 MENU_PlChild2RadioCallback
-    MENU_AddRadioButton pl_child_menu2 Sub2 b2 MENU_PlChild2RadioCallback
-    # -----------------------------------------------------------------------------------------------------------------
-
-    MENU_AddDivider pl_menu
-    MENU_AddMenu pl_menu pl_child_menu1
-    MENU_AddMenu pl_menu pl_child_menu2
-
-    # -----------------------------------------------------------------------------------------------------------------
-    # Show/display the menu
-    #
-    #           handle                - a name/handle of the menu to be used w/ the API
-    #             |   flag1           - whether to call the main menu's callback
-    #             |     |  flag2      - whether to call the selected radio button item's callback
-    #             |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
-    #MENU_Show pl_menu true true all
-
-    #
-    # mode:
-    #  no (false) - do not call any callback for any check button itmes
-    #  all (true) - call all the callbacks for all the check button items regardless of the state
-    #  on         - call all the callbacks for all on (checked) check button items
-    #  off        - call all the callbacks for all off (un-checked) check button items
-    #
-    # -----------------------------------------------------------------------------------------------------------------
-
-    MENU_Create build_menu Build Build MENU_BuildCallback
-    #MENU_SetStyle build_menu default none light.blue
-    MENU_SetStyle build_menu default none custom.background custom.foreground custom.highlighter
-
-    #
-    # if there is no alias for the menu you can call it through
-    # MENU API directly or create your own alias:
-    #
-    # > MENU_Show build_menu
-    #
-
-    #
-    # Demo menu 'Build'
-    #
-    MENU_AddRadioButton build_menu Debug debug MENU_BuildModeCallback
-    MENU_AddRadioButton build_menu Release release MENU_BuildModeCallback
-    MENU_AddDivider build_menu
-    MENU_AddCheckButton build_menu Pedantic Pedant MENU_BuildGccFlagsCallback
-    MENU_AddCheckButton build_menu Wall all MENU_BuildGccFlagsCallback
-    MENU_AddCheckButton build_menu Werror err MENU_BuildGccFlagsCallback
-    MENU_AddCheckButton build_menu fPIC PIC MENU_BuildGccFlagsCallback
-    MENU_AddCheckButton build_menu isoC99 iso MENU_BuildGccFlagsCallback
-    MENU_Select build_menu Debug false
-    MENU_Select build_menu Wall false
-    MENU_Select build_menu Werror false
+#    MENU_Create pl_menu PLATFORM PL MENU_PlCallback
+#    #MENU_Create pl_menu $null PL MENU_DemoMainMenu
+#    #MENU_Create pl_menu $null $null MENU_DemoMainMenu
+#    #MENU_Create pl_menu
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Under the hood 'PL' is just an alias for: 'MENU_Show pl_menu'
+#    #
+#    # 1 [OPT]  flag1           - whether to call the main menu's callback
+#    # 2 [OPT]   |    flag2     - whether to call the selected radio button item's callback
+#    # 3 [OPT]   |     |   mode - call-mode of all the check button item's callbacks, for modes see documentation for .Show
+#    # > PL    false false all
+#    #
+#    # Alias 'PL' usage examples:
+#    #
+#    # > PL                 - displays the menu
+#    # > PL true            - displays the menu + calls the menu's callback
+#    # > PL false true      - displays the menu + calls the selected radio button item's callback
+#    # > PL true true       - displays the menu + calls both the selected item and the main menu's callbacks
+#    # > PL false false all - displays the menu + calls all the radio button item's callbacks
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Set the menu's style (replace the default style)
+#    #
+#    # 1           handle                                                  - a name/handle of the menu to be used w/ the API
+#    # 2 [OPT]       |    divider                                          - devider to be used w/ .AddDivider ('|' by default)
+#    # 3 [OPT]       |      |     alignment                                - alignent of the items (none by default)
+#    # 4 [OPT]       |      |        |  background.color                   - the background color (black by default)
+#    # 5 [OPT]       |      |        |    |     foreground.color           - the regular text color (white by default)
+#    # 6 [OPT]       |      |        |    |       |  highlighter.color     - the hightlighted items color (green by default)
+#    # 7 [OPT]       |      |        |    |       |    | radio.symbol      - the select symbol for the radio button when selected
+#    # 8 [OPT]       |      |        |    |       |    |   |  check.symbol - the check symbol for the check button when checked
+#    #MENU_SetStyle pl_menu default none default cyan red '○' default
+#    #MENU_SetStyle pl_menu default by.largest.item
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Set the extra style of the menu (replace the default style)
+#    # 1            handle                                                  - a name/handle of the menu to be used w/ the API
+#    # 2 [OPT]         |     separator.show                                 - {true/false} whether to print the menu's separator (true by default)
+#    # 3 [OPT]         |       |  separator.symbol                          - separator symbol ('-' by default)
+#    # 4 [OPT]         |       |    |  name.header                          - menu's name header (' * ' by default)
+#    # 5 [OPT]         |       |    |    |  name.footer                     - menu's name footer (':' by default)
+#    # 6 [OPT]         |       |    |    |    | symbol.radio.start          - radio.button opening symbol ('(' by default)
+#    # 7 [OPT]         |       |    |    |    |   | symbol.radio.end        - radio.button closing symbol (')' by default)
+#    # 8 [OPT]         |       |    |    |    |   |   | symbol.chk.start    - check.button opening symbol ('[' by default)
+#    # 9 [OPT]         |       |    |    |    |   |   |   |  symbol.chk.end - check.button closing symbol (']' by default)
+#    #MENU_SetStyleEx pl_menu true '-' " * " ":" '(' ')' '[' ']'
+#    #
+#    # For example:
+#    #
+#    #MENU_SetStyleEx pl_menu true '=' " + '" "':" '[[' ']]' '((' '))'
+#    #MENU_SetStyle pl_menu default by.largest.item cyan 'xx' '***'
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Add a radio.button item into the menu
+#    #
+#    # 1               handle                    - a name/handle of the menu to be used w/ the API
+#    # 2                 |    name               - an item's name to be added into the menu
+#    # 3 [OPT]           |     |    alias        - an alias to be created that triggers the item's callback
+#    # 4 [OPT]           |     |     |  callback - a function to be called when an item is selected
+#    MENU_AddRadioButton pl_menu Linux nux MENU_PlLinuxCallback
+#    #MENU_AddRadioButton pl_menu Linux $null MENU_DemoPlLinuxCb
+#    #MENU_AddRadioButton pl_menu Linux
+#    #
+#    # In the invocation example #2, there is no alias for item 'Linux', so the only way to call it is by using
+#    # the .Select command, like so: MENU_Select pl_menu Linux true false true
+#    # Please, look into .Select command demo to understand all the flags
+#    #
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Under the hood 'nux' is just an alias for: 'MENU_Select pl_menu Linux true false true'
+#    #
+#    # Alias 'nux' can take additional optional arguments:
+#    #
+#    # 1 [OPT]  flag1     - {true, false} whether to call the main menu's callback
+#    # 2 [OPT]   |   mode - call-mode of the check button callbacks {no(false), all(true), on, off}
+#    # > nux    true no
+#    #
+#    # Alias 'nux' usage examples:
+#    #
+#    # > nux          - selects 'Linux' item, displays the 'PLATFORM' menu and triggers the 'Linux' item's callback
+#    # > nux true     - all the above + triggers the 'PLATFORM' menu's callback
+#    # > nux true all - all the above + triggers all the check button item's callbacks
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    MENU_AddDivider pl_menu
+#    MENU_AddLabel pl_menu QEMU:
+#    MENU_AddRadioButton pl_menu v8 v8 MENU_PlQemuCallback
+#    MENU_AddRadioButton pl_menu arm32 arm MENU_PlQemuCallback
+#    #MENU_AddRadioButton pl_menu "Name w/ space" ace MENU_DemoPlQemuCb
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Select an item of the menu
+#    #
+#    # 1         handle                           - a name/handle of the menu to be used w/ the API
+#    # 2           |    name                      - a name of an item to be set as 'selected' in the menu
+#    # 3 [OPT]     |     |   show                 - whether to show the menu after the item has been selected/checked
+#    # 4 [OPT]     |     |    |    flag1          - whether to call the main menu's callback
+#    # 5 [OPT]     |     |    |     |   flag2     - whether to call the selected radio button item's callback
+#    # 6 [OPT]     |     |    |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
+#    MENU_Select pl_menu v8 false false true no
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Create two child menus and add them into the main (parent) PLATFORM menu
+#    # -----------------------------------------------------------------------------------------------------------------
+#    MENU_Create pl_child_menu1 $null $null MENU_PlChild1Callback
+#    #MENU_SetStyle pl_child_menu1 default none default custom1 custom2
+#
+#    #MENU_AddLabel pl_child_menu1 It:
+#    MENU_AddRadioButton pl_child_menu1 Item1 m1 MENU_PlChild1RadioCallback
+#    MENU_AddRadioButton pl_child_menu1 Item2 m2 MENU_PlChild1RadioCallback
+#    MENU_AddRadioButton pl_child_menu1 Item3 m3 MENU_PlChild1RadioCallback
+#    # -----------------------------------------------------------------------------------------------------------------
+#    MENU_AddDivider pl_child_menu1
+#    #MENU_AddLabel pl_child_menu1 Mode:
+#    MENU_AddCheckButton pl_child_menu1 Ps1 s1 MENU_PlChild1CheckCallback
+#    MENU_AddCheckButton pl_child_menu1 Nx Nx MENU_PlChild1CheckCallback
+#    MENU_Select pl_child_menu1 Item2 false
+#    MENU_Select pl_child_menu1 Ps1 false
+#    # -----------------------------------------------------------------------------------------------------------------
+#    MENU_Create pl_child_menu2
+#    #MENU_SetStyle pl_child_menu2 default none default custom1 custom2
+#
+#    MENU_AddDivider pl_child_menu2
+#    #MENU_AddLabel pl_child_menu2 Extra:
+#    MENU_AddRadioButton pl_child_menu2 Sub1 b1 MENU_PlChild2RadioCallback
+#    MENU_AddRadioButton pl_child_menu2 Sub2 b2 MENU_PlChild2RadioCallback
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    MENU_AddDivider pl_menu
+#    MENU_AddMenu pl_menu pl_child_menu1
+#    MENU_AddMenu pl_menu pl_child_menu2
+#
+#    # -----------------------------------------------------------------------------------------------------------------
+#    # Show/display the menu
+#    #
+#    #           handle                - a name/handle of the menu to be used w/ the API
+#    #             |   flag1           - whether to call the main menu's callback
+#    #             |     |  flag2      - whether to call the selected radio button item's callback
+#    #             |     |    |   mode - call-mode of the check button callbacks [no (false), all (true), on, off]
+#    #MENU_Show pl_menu true true all
+#
+#    #
+#    # mode:
+#    #  no (false) - do not call any callback for any check button itmes
+#    #  all (true) - call all the callbacks for all the check button items regardless of the state
+#    #  on         - call all the callbacks for all on (checked) check button items
+#    #  off        - call all the callbacks for all off (un-checked) check button items
+#    #
+#    # -----------------------------------------------------------------------------------------------------------------
+#
+#    MENU_Create build_menu Build Build MENU_BuildCallback
+#    #MENU_SetStyle build_menu default none light.blue
+#    MENU_SetStyle build_menu default none custom.background custom.foreground custom.highlighter
+#
+#    #
+#    # if there is no alias for the menu you can call it through
+#    # MENU API directly or create your own alias:
+#    #
+#    # > MENU_Show build_menu
+#    #
+#
+#    #
+#    # Demo menu 'Build'
+#    #
+#    MENU_AddRadioButton build_menu Debug debug MENU_BuildModeCallback
+#    MENU_AddRadioButton build_menu Release release MENU_BuildModeCallback
+#    MENU_AddDivider build_menu
+#    MENU_AddCheckButton build_menu Pedantic Pedant MENU_BuildGccFlagsCallback
+#    MENU_AddCheckButton build_menu Wall all MENU_BuildGccFlagsCallback
+#    MENU_AddCheckButton build_menu Werror err MENU_BuildGccFlagsCallback
+#    MENU_AddCheckButton build_menu fPIC PIC MENU_BuildGccFlagsCallback
+#    MENU_AddCheckButton build_menu isoC99 iso MENU_BuildGccFlagsCallback
+#    MENU_Select build_menu Debug false
+#    MENU_Select build_menu Wall false
+#    MENU_Select build_menu Werror false
 
     #
     # Demo menu 'LOGS'
@@ -373,7 +370,7 @@ MENU_Create() {
 alias dev='MENU_ShowAll true'
 
 # Some cool stuff that you can do with the MENU class
-alias flip='MENU__separator build_menu; MENU_CheckButtonForAll build_menu flip true false false all; MENU__separator build_menu'
+#alias flip='MENU__separator build_menu; MENU_CheckButtonForAll build_menu flip true false false all; MENU__separator build_menu'
 
 MENU_Create
 

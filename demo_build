@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# -----------------------------------------------------------------------------
+#
+# Demo menu 'Build'
+#
+# -----------------------------------------------------------------------------
+
+MENU_BuildCallback() {
+    echo " $1.$2..."
+    echo ' ...'
+}
+
+MENU_BuildModeCallback() {
+    echo " $1.$2..."
+    case $2 in
+        Debug)
+            echo ' ...'
+            ;;
+        Release)
+            echo ' ...'
+            ;;
+    esac
+}
+
+MENU_BuildGccFlagsCallback() {
+    echo " $1.$2.state.[$3]..."
+    case $2 in
+        Pedantic)
+            echo ' ...'
+            ;;
+        Wall)
+            echo ' ...'
+            ;;
+        Werror)
+            echo ' ...'
+            ;;
+        fPIC)
+            echo ' ...'
+            ;;
+        isoC99)
+            echo ' ...'
+            ;;
+    esac
+}
+
+DEMO_CreateBuildMenu() {
+    MENU_Create build_menu Build Build MENU_BuildCallback
+    #MENU_SetStyle build_menu default none light.blue
+    #MENU_SetStyle build_menu default none custom.background custom.foreground custom.highlighter
+
+    MENU_AddRadioButton build_menu Debug debug MENU_BuildCallback
+    MENU_AddRadioButton build_menu Release release MENU_BuildModeCallback
+    MENU_AddDivider build_menu
+    MENU_AddCheckButton build_menu Pedantic Pedant MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu Wall all MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu Werror err MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu fPIC PIC MENU_BuildGccFlagsCallback
+    MENU_AddCheckButton build_menu isoC99 iso MENU_BuildGccFlagsCallback
+    MENU_Select build_menu Debug false
+    MENU_Select build_menu Wall false
+    MENU_Select build_menu Werror false
+
+    #MENU_debug_print_all
+}
+
+DEMO_CreateBuildMenu
+alias dev='MENU_ShowAll true'

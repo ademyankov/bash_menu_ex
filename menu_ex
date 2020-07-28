@@ -16,7 +16,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Release'
+MENUEX['build']='Debug'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -750,6 +750,7 @@ MENU_Show() {
         return
     fi
 
+    __args=("$@")
     MENU_log_info "ARGS: $*"
 
     eval "${MENUEX['map']}"
@@ -887,6 +888,7 @@ MENU_Show() {
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']}"
                         ((idx++))
+                        echo "1========================> ${#callbacks[@]}"
                     fi
                 else
                     # '( ) Name '
@@ -913,6 +915,7 @@ MENU_Show() {
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
+                        echo "2========================> ${#callbacks[@]}"
                     fi
                 else
                     # '[ ] Name '
@@ -925,6 +928,7 @@ MENU_Show() {
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
+                        echo "3========================> ${#callbacks[@]}"
                     fi
                 fi
 
@@ -943,10 +947,13 @@ MENU_Show() {
                     fi
                 fi
 
+                MENU_log_warning "add_callback: $add_callback"
+
                 if [ "$add_callback" == 'true' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     ((idx++))
+                    echo "4========================> ${#callbacks[@]}"
                 fi
 
                 continue;
@@ -971,6 +978,11 @@ MENU_Show() {
 
     printf "\e[0m"
     printf "\n"
+
+    ELEMENTS=${#__args[@]}
+    for ((i=0;i<$ELEMENTS;i++)); do
+        echo ${__args[${i}]}
+    done
 
     # Last, call all the callbacks with its arguments that needs to be called
     for i in "${!callbacks[@]}"; do

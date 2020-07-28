@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# -----------------------------------------------------------------------------
+#
+# Demo menu 'LOGS'
+#
+# >logs -h will show all the aliases created
+#
+# Might be helpfull since aliases for LOGS menu will not be underlined
+# because the lower/upper case does not technically match
+#
+# -----------------------------------------------------------------------------
+
+MENU_LogsCallback() {
+    echo " LOGS.$2..."
+    case $2 in
+        FATAL)
+            # do something
+            echo ' ...'
+            ;;
+        SEVERE)
+            # do something
+            echo ' ...'
+            ;;
+        WARNING)
+            # do something
+            echo ' ...'
+            ;;
+        INFO)
+            # do something
+            echo ' ...'
+            ;;
+        FINE)
+            # do something
+            echo ' ...'
+            ;;
+        FINER)
+            # do something
+            echo ' ...'
+            ;;
+        FINEST)
+            # do something
+            echo ' ...'
+            ;;
+        OFF)
+            # do something
+            echo ' ...'
+            ;;
+    esac
+}
+
+DEMO_CreateLogsMenu() {
+    MENU_Create logs_menu LOGS logs
+    MENU_SetStyle logs_menu default by.largest.item
+
+    MENU_AddRadioButton logs_menu FATAL fatal MENU_LogsCallback
+    MENU_AddRadioButton logs_menu SEVERE severe MENU_LogsCallback
+    MENU_AddRadioButton logs_menu WARNING warning MENU_LogsCallback
+    MENU_AddRadioButton logs_menu INFO info MENU_LogsCallback
+    MENU_AddLnBreak logs_menu
+    MENU_AddRadioButton logs_menu FINE '' MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINER '' MENU_LogsCallback
+    MENU_AddRadioButton logs_menu FINEST '' MENU_LogsCallback
+    MENU_AddRadioButton logs_menu OFF off MENU_LogsCallback
+
+    MENU_Select logs_menu INFO false
+
+    #MENU_debug_print_all
+}
+
+DEMO_CreateLogsMenu
+alias dev='MENU_ShowAll true'
