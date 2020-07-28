@@ -16,7 +16,7 @@ unset MENUEX
 declare -A MENUEX=()
 
 # Change to 'Debug' for logs to be shown
-MENUEX['build']='Debug'
+MENUEX['build']='Release'
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -416,7 +416,7 @@ MENU_add_item() {
     local -A item=()
     item['type']=$1
     item['name']=$item_name
-    item['checked']='false' # used for 'check.button' items only
+    item['checked']='off' # used for 'check.button' items only
     item['alias']='MENU_Null'
     item['callback']='MENU_Null'
 
@@ -596,7 +596,7 @@ MENU_Select() {
     for i in "${!items[@]}"; do
         eval "${items["$i"]}"
         if [[ "${item['name']}" == $2 ]] && [[ "${item['type']}" == 'check.button' ]]; then
-            [[ "${item['checked']}" == 'true' ]] && item['checked']='false' || item['checked']='true'
+            [[ "${item['checked']}" == 'on' ]] && item['checked']='off' || item['checked']='on'
             items["$i"]=$(declare -p item)
             context['items']=$(declare -p items)
             MENU_log_info "CHECK BOX: '$current_item' state='${item['checked']}'"
@@ -692,13 +692,13 @@ MENU_CheckButtonForAll() {
         local updated='false'
         case $2 in
             check)
-                [ "${item["checked"]}" == 'false' ] && item['checked']='true'; updated='true'
+                [ "${item["checked"]}" == 'off' ] && item['checked']='on'; updated='true'
                 ;;
             uncheck)
-                [ "${item["checked"]}" == 'true' ] && item['checked']='false'; updated='true'
+                [ "${item["checked"]}" == 'on' ] && item['checked']='off'; updated='true'
                 ;;
             flip)
-                [ "${item["checked"]}" == 'true' ] && item['checked']='false' || item['checked']='true'
+                [ "${item["checked"]}" == 'on' ] && item['checked']='off' || item['checked']='on'
                 updated='true'
                 ;;
         esac
@@ -750,7 +750,6 @@ MENU_Show() {
         return
     fi
 
-    __args=("$@")
     MENU_log_info "ARGS: $*"
 
     eval "${MENUEX['map']}"
@@ -888,7 +887,6 @@ MENU_Show() {
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']}"
                         ((idx++))
-                        echo "1========================> ${#callbacks[@]}"
                     fi
                 else
                     # '( ) Name '
@@ -902,7 +900,7 @@ MENU_Show() {
             fi
 
             if [ "$type" == 'check.button' ]; then
-                if [ "${item['checked']}" == 'true' ]; then
+                if [ "${item['checked']}" == 'on' ]; then
                     local hi=${highlighter}$smul${item['alias']}$rmul
 
                     # '[x] Name '
@@ -911,11 +909,10 @@ MENU_Show() {
                     printf "${name/$alias/$hi}%*s" $name_pad_sz
                     printf "\e[0m"
 
-                    if [ "$mode" == 'true' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
+                    if [ "$mode" == 'on' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
-                        echo "2========================> ${#callbacks[@]}"
                     fi
                 else
                     # '[ ] Name '
@@ -924,11 +921,10 @@ MENU_Show() {
                     printf "${context['check.button.bracket.end']} "
                     printf "${name/$alias/$smul$alias$rmul}%*s" $name_pad_sz
 
-                    if [ "$mode" == 'false' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
+                    if [ "$mode" == 'off' ] && [ "${context['callback']}" != 'MENU_Null' ]; then
                         callbacks[$idx]=${item['callback']}
                         arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                         ((idx++))
-                        echo "3========================> ${#callbacks[@]}"
                     fi
                 fi
 
@@ -947,13 +943,10 @@ MENU_Show() {
                     fi
                 fi
 
-                MENU_log_warning "add_callback: $add_callback"
-
                 if [ "$add_callback" == 'true' ]; then
                     callbacks[$idx]=${item['callback']}
                     arguments[$idx]="$1 ${item['name']} ${item['checked']}"
                     ((idx++))
-                    echo "4========================> ${#callbacks[@]}"
                 fi
 
                 continue;
@@ -978,11 +971,6 @@ MENU_Show() {
 
     printf "\e[0m"
     printf "\n"
-
-    ELEMENTS=${#__args[@]}
-    for ((i=0;i<$ELEMENTS;i++)); do
-        echo ${__args[${i}]}
-    done
 
     # Last, call all the callbacks with its arguments that needs to be called
     for i in "${!callbacks[@]}"; do
